@@ -1,13 +1,60 @@
 use std::io;
+
 mod game_state;
+mod player;
+mod random_player;
+
 use game_state::GameState;
+use player::Player;
+use random_player::RandomPlayer;
 
 fn main() {
     input();
 }
+fn choose() -> Option<Box<dyn Player>> {
+    println!("Welcome to Connect 4. Choose an opponent.");
+    println!("1. Random-Placement Player");
+    println!("2. Algorithmic Player");
+    println!("3. Min-Max Player");
+    println!("4. Neural Network Player");
+    println!("5. Quit");
+        let mut choice = String::new();
+        io::stdin().read_line(&mut choice).expect("Failed to read input");
+        match choice.trim() {
+            "1" => {
+                println!("You selected Random Player.");
+                return Some(Box::new(RandomPlayer {}));
+            }
+            "2" => {
+                println!("Algorithmic Player is not implemented yet.");
+                return Some(Box::new(RandomPlayer {}));
+            }
+            "3" => {
+                println!("Min-Max Player is not implemented yet.");
+                return Some(Box::new(RandomPlayer {}));
+            }
+            "4" => {
+                println!("Neural Network Player is not implemented yet.");
+                return Some(Box::new(RandomPlayer {}));
+            }
+            "5" => {
+                println!("Exiting game.");
+                return Some(Box::new(RandomPlayer {}));
+            }
+            _ => {
+                println!("Invalid choice. Please select a valid option (1-5).");
+            }
+    }
+    return None;
+}
 
 fn input() {
-    println!("Welcome to Connect 4. User goes first. Player moves get marked with a 1, and CPU moves get marked with a 2.");
+    let options = choose();
+    if options.is_none() {
+        return;
+    }
+    let mut cpu = options.unwrap();
+    println!("User goes first. Player moves get marked with a 1, and CPU moves get marked with a 2.");
     let mut loss = false;
 
     // Initialize the board using GameState::new()
@@ -47,7 +94,7 @@ fn input() {
         board.board_to_string(); // No need for `self` here
         println!("This is the new board after your move.");
 
-        board.cpu_random(); // CPU move
+        cpu.make_move(&mut board); // CPU move
         
         println!();
         board.board_to_string(); // No need for `self` here

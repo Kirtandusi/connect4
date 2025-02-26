@@ -1,11 +1,9 @@
-use rand::Rng;
 use term;
 
 pub struct GameState {
     pub board: Vec<Vec<usize>>,
     pub exclude: Vec<usize>,
 }
-
 impl GameState {
     // Create a new game state with an empty board
     pub fn new() -> GameState {
@@ -51,25 +49,7 @@ impl GameState {
         }
     }
 
-    pub fn cpu_random(&mut self) {
-        if self.exclude.len() == 7 {
-            println!("Board is full, game is a tie!");
-            return;
-        }
-        let mut rng = rand::thread_rng();
-        let valid_columns: Vec<usize> = (0..7).filter(|&x| !self.exclude.contains(&x)).collect();
-        if valid_columns.is_empty() {
-            println!("No valid columns left, game over!");
-            return;
-        }
-        let column = valid_columns[rng.gen_range(0..valid_columns.len())];
-        if !self.check_if_full(column) {
-            self.play_move(column, false); // CPU move
-        } else {
-            self.exclude.push(column);
-            self.cpu_random();
-        }
-    }
+    
 
     pub fn board_to_string(&self) {
         let mut terminal = term::stdout().unwrap();
