@@ -18,34 +18,36 @@ fn choose() -> Option<Box<dyn Player>> {
     println!("3. Min-Max Player");
     println!("4. Neural Network Player");
     println!("5. Quit");
-        let mut choice = String::new();
-        io::stdin().read_line(&mut choice).expect("Failed to read input");
-        match choice.trim() {
-            "1" => {
-                println!("You selected Random Player.");
-                return Some(Box::new(RandomPlayer {}));
-            }
-            "2" => {
-                println!("Algorithmic Player is not implemented yet.");
-                return Some(Box::new(RandomPlayer {}));
-            }
-            "3" => {
-                println!("Min-Max Player is not implemented yet.");
-                return Some(Box::new(RandomPlayer {}));
-            }
-            "4" => {
-                println!("Neural Network Player is not implemented yet.");
-                return Some(Box::new(RandomPlayer {}));
-            }
-            "5" => {
-                println!("Exiting game.");
-                return Some(Box::new(RandomPlayer {}));
-            }
-            _ => {
-                println!("Invalid choice. Please select a valid option (1-5).");
-            }
+    let mut choice = String::new();
+    io::stdin()
+        .read_line(&mut choice)
+        .expect("Failed to read input");
+    match choice.trim() {
+        "1" => {
+            println!("You selected Random Player.");
+            return Some(Box::new(RandomPlayer {}));
+        }
+        "2" => {
+            println!("Algorithmic Player is not implemented yet.");
+            return Some(Box::new(RandomPlayer {}));
+        }
+        "3" => {
+            println!("Min-Max Player is not implemented yet.");
+            return Some(Box::new(RandomPlayer {}));
+        }
+        "4" => {
+            println!("Neural Network Player is not implemented yet.");
+            return Some(Box::new(RandomPlayer {}));
+        }
+        "5" => {
+            println!("Exiting game.");
+            return Some(Box::new(RandomPlayer {}));
+        }
+        _ => {
+            println!("Invalid choice. Please select a valid option (1-5).");
+        }
     }
-    return None;
+    None
 }
 
 fn input() {
@@ -54,7 +56,9 @@ fn input() {
         return;
     }
     let mut cpu = options.unwrap();
-    println!("User goes first. Player moves get marked with a 1, and CPU moves get marked with a 2.");
+    println!(
+        "User goes first. Player moves get marked with a 1, and CPU moves get marked with a 2."
+    );
     let mut loss = false;
 
     // Initialize the board using GameState::new()
@@ -62,11 +66,14 @@ fn input() {
     board.board_to_string(); // No need for `self` here
 
     let mut input_str: String = String::new();
-    while !loss && board.is_not_full() { // input cycle
+    while !loss && board.is_not_full() {
+        // input cycle
         input_str.clear();
         println!("Please choose a column to drop your piece. Input range is 1-7");
-        io::stdin().read_line(&mut input_str).expect("Failed to read input");
-       
+        io::stdin()
+            .read_line(&mut input_str)
+            .expect("Failed to read input");
+
         let mut column: usize = match input_str.trim().parse() {
             Ok(num) => num,
             Err(_) => {
@@ -74,28 +81,28 @@ fn input() {
                 continue;
             }
         };
-        
-        if column < 1 || column > 7 {
+
+        if !(1..=7).contains(&column) {
             println!("Invalid input, please try again");
             continue;
         }
-        column = column - 1; // Convert to 0-based index
+        column -= 1; // Convert to 0-based index
         println!();
-        
+
         if !board.check_if_full(column) {
             board.play_move(column, true); // Player move
         }
-        
+
         if board.check_for_win() {
             println!("You win!");
             loss = true;
         }
-        
+
         board.board_to_string(); // No need for `self` here
         println!("This is the new board after your move.");
 
         cpu.make_move(&mut board); // CPU move
-        
+
         println!();
         board.board_to_string(); // No need for `self` here
 

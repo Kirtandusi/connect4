@@ -1,4 +1,3 @@
-use term;
 
 pub struct GameState {
     pub board: Vec<Vec<usize>>,
@@ -40,12 +39,10 @@ impl GameState {
         let top_of_column = self.top(column);
         if top_of_column == 6 {
             println!("Column is full, please choose another column");
+        } else if side {
+            self.board[top_of_column][column] = 1; // Player move
         } else {
-            if side {
-                self.board[top_of_column][column] = 1; // Player move
-            } else {
-                self.board[top_of_column][column] = 2; // CPU move
-            }
+            self.board[top_of_column][column] = 2; // CPU move
         }
     }
 
