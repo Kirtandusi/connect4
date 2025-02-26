@@ -1,4 +1,3 @@
-
 use crate::game_state::GameState;
 use crate::player::Player;
 use rand::Rng;
@@ -10,7 +9,9 @@ impl Player for RandomPlayer {
             return;
         }
         let mut rng = rand::thread_rng();
-        let valid_columns: Vec<usize> = (0..7).filter(|&x| !gamestate.exclude.contains(&x)).collect();
+        let valid_columns: Vec<usize> = (0..7)
+            .filter(|&x| !gamestate.exclude.contains(&x))
+            .collect();
         if valid_columns.is_empty() {
             println!("No valid columns left, game over!");
             return;
