@@ -36,7 +36,7 @@ fn input() {
        
         board_to_string(&mut board);
         println!("This is the new board after your move.");
-        cpu_random(&mut board, vec![]);
+        cpu_random(&mut board, &mut vec![]);
         println!();
         board_to_string(&mut board);
         if check_for_win(&mut board) {
@@ -67,12 +67,12 @@ fn play_move(_column: usize, _board: &mut Vec<Vec<usize>>, side: bool) {
     return;
 }
 fn cpu_random(board: &mut Vec<Vec<usize>>, exclude: &mut Vec<usize>) {
-    if (exclude.len() == 7) {
+    if exclude.len() == 7 {
         println!("CPU cannot play, game over");
         return;
     }
     let mut rng = rand::thread_rng();
-    let mut valid_columns: Vec<usize> = (0..7).filter(|&x| !exclude.contains(&x)).collect();
+    let valid_columns: Vec<usize> = (0..7).filter(|&x| !exclude.contains(&x)).collect();
     if valid_columns.is_empty() {
         println!("No valid columns left, game over!");
         return;
