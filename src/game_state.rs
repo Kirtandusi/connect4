@@ -14,13 +14,10 @@ impl GameState {
             exclude: Vec::new(),
         }
     }
-
-    // Check if the board is full for a particular column
     pub fn check_if_full(&self, column: usize) -> bool {
         self.board[0][column] != 0
     }
 
-    // Check if the game is not full
     pub fn is_not_full(&self) -> bool {
         for i in 0..7 {
             for j in 0..6 {
@@ -32,7 +29,6 @@ impl GameState {
         false
     }
 
-    // Get the topmost row for a given column
     pub fn top(&self, column: usize) -> usize {
         for i in (0..6).rev() {
             if self.board[i][column] == 0 {
@@ -42,7 +38,6 @@ impl GameState {
         6
     }
 
-    // Make a move (either player or CPU)
     pub fn play_move(&mut self, column: usize, side: bool) {
         let top_of_column = self.top(column);
         if top_of_column == 6 {
@@ -56,7 +51,6 @@ impl GameState {
         }
     }
 
-    // CPU randomly selects a column and makes a move
     pub fn cpu_random(&mut self) {
         if self.exclude.len() == 7 {
             println!("Board is full, game is a tie!");
@@ -77,7 +71,6 @@ impl GameState {
         }
     }
 
-    // Print the board in a human-readable format
     pub fn board_to_string(&self) {
         let mut terminal = term::stdout().unwrap();
         for i in 0..6 {
@@ -96,8 +89,7 @@ impl GameState {
         }
     }
 
-    // Check if a player has won the game (not implemented yet)
     pub fn check_for_win(&self) -> bool {
-        false // Stub, need to implement actual win logic
+        false
     }
 }
