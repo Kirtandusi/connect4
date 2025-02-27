@@ -34,9 +34,18 @@ impl MinMaxPlayer {
     }
     //all available moves to the AI
     fn generate_moves(&self, gamestate: &mut GameState) -> Vec<usize> {
-        (0..7)
+        let mut moves: Vec<usize> = (0..7)
             .filter(|&col| !gamestate.check_if_full(col))
-            .collect()
+            .collect();
+
+        // Sort moves to prioritize center columns
+        moves.sort_by(|a, b| {
+            let center_dist_a = (3 as isize - *a as isize).abs();
+            let center_dist_b = (3 as isize - *b as isize).abs();
+            center_dist_a.cmp(&center_dist_b)
+        });
+
+        moves
     }
     fn minimax(
         &self,
@@ -94,6 +103,7 @@ impl MinMaxPlayer {
         }
     }
 
+
 impl Player for MinMaxPlayer {
     //assign weights to each position on the board.
     //algorithm will explore depth of 3.
@@ -101,8 +111,11 @@ impl Player for MinMaxPlayer {
         //both players start with worst possible score. Alpha is -infinity, beta is +infinity
         //whenever maximum score of minimizing player crosses minimum score of maximizing player
         //branches of the tree are 'pruned'
+        let valid_moves = self.generate_moves(gamestate);
+        if valid_moves.is_empty() {
+            return;
+        }
         let (_score, col) = self.minimax(gamestate, 3, isize::MIN, isize::MAX, true);
         gamestate.play_move(col, false);
-
     }
 }
