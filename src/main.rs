@@ -59,14 +59,14 @@ fn input() {
     println!(
         "User goes first. Player moves get marked with a 1, and CPU moves get marked with a 2."
     );
-    let mut loss = false;
+    //let mut loss = false;
 
     // Initialize the board using GameState::new()
     let mut board = GameState::new();
     board.board_to_string(); // No need for `self` here
 
     let mut input_str: String = String::new();
-    while !loss && board.is_not_full() {
+    while board.is_not_full() {
         // input cycle
         input_str.clear();
         println!("Please choose a column to drop your piece. Input range is 1-7");
@@ -94,8 +94,10 @@ fn input() {
         }
 
         if board.check_for_win() {
+            board.board_to_string();
             println!("You win!");
-            loss = true;
+            //loss = true;
+            return;
         }
 
         board.board_to_string(); // No need for `self` here
@@ -107,8 +109,10 @@ fn input() {
         board.board_to_string(); // No need for `self` here
 
         if board.check_for_win() {
+            board.board_to_string();
             println!("CPU wins!");
-            loss = true;
+            //loss = true;
+            return;
         } else {
             print!("This is the new board after the CPU's turn. ");
             if board.is_not_full() {
