@@ -15,9 +15,9 @@ impl GameState {
     }
 
     pub fn is_not_full(&self) -> bool {
-        for i in 0..7 {
-            for j in 0..6 {
-                if self.board[j][i] == 0 {
+        for i in 0..6 {
+            for j in 0..7 {
+                if self.board[i][j] == 0 {
                     return true;
                 }
             }
@@ -65,7 +65,8 @@ impl GameState {
     pub fn check_for_win(&self) -> bool {
         let length = self.board.len();
         let width = self.board[0].len();
-        //vertical checks.
+        
+        //horizontal checks
         for i in 0..length {
             let mut count_user: usize = 0;
             let mut count_cpu: usize = 0;
@@ -89,7 +90,8 @@ impl GameState {
                 }
             }
         }
-        //horizontal checks
+        
+        //vertical checks
         for i in 0..width {
             let mut count_user: usize = 0;
             let mut count_cpu: usize = 0;
@@ -142,5 +144,14 @@ impl GameState {
             }
         }
         false
+    }
+    
+    pub fn undo_move(&mut self, column: usize) {
+        for i in (0..6).rev() {
+            if self.board[i][column] != 0 {
+                self.board[i][column] = 0;
+                break;
+            }
+        }
     }
 }

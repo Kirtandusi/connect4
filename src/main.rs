@@ -3,11 +3,12 @@ use std::io;
 mod game_state;
 mod player;
 mod random_player;
+mod minimax_player;
 
 use game_state::GameState;
 use player::Player;
 use random_player::RandomPlayer;
-
+use minimax_player::MinMaxPlayer;
 fn main() {
     input();
 }
@@ -24,7 +25,7 @@ fn choose() -> Option<Box<dyn Player>> {
         .expect("Failed to read input");
     match choice.trim() {
         "1" => {
-            println!("You selected Random Player.");
+            println!("You have selected Random Player.");
             return Some(Box::new(RandomPlayer {}));
         }
         "2" => {
@@ -32,8 +33,8 @@ fn choose() -> Option<Box<dyn Player>> {
             return Some(Box::new(RandomPlayer {}));
         }
         "3" => {
-            println!("Min-Max Player is not implemented yet.");
-            return Some(Box::new(RandomPlayer {}));
+            println!("You have selected Min-Max Player.");
+            return Some(Box::new(MinMaxPlayer {}));
         }
         "4" => {
             println!("Neural Network Player is not implemented yet.");
