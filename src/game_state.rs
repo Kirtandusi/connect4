@@ -145,13 +145,12 @@ impl GameState {
         }
         false
     }
-    
-    pub fn undo_move(&mut self, column: usize) {
-        for i in (0..6).rev() {
-            if self.board[i][column] != 0 {
-                self.board[i][column] = 0;
-                break;
-            }
+}
+impl Clone for GameState {
+    fn clone(&self) -> Self {
+        Self {
+            board: self.board.clone(),
+            exclude: self.exclude.clone(),
         }
     }
 }

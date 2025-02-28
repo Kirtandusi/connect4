@@ -110,6 +110,7 @@ fn input() {
         board.board_to_string(); // No need for `self` here
 
         if board.check_for_win() {
+            println!();
             board.board_to_string();
             println!("CPU wins!");
             //loss = true;

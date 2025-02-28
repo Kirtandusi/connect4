@@ -32,8 +32,9 @@ impl MinMaxPlayer {
         }
         score
     }
+    
     //all available moves to the AI
-    fn generate_moves(&self, gamestate: &mut GameState) -> Vec<usize> {
+    fn generate_moves(&self, gamestate: &GameState) -> Vec<usize> {
         let mut moves: Vec<usize> = (0..7)
             .filter(|&col| !gamestate.check_if_full(col))
             .collect();
@@ -47,75 +48,141 @@ impl MinMaxPlayer {
 
         moves
     }
-    fn minimax(
-        &self,
-        gamestate: &mut GameState,
-        depth: usize,
-        mut alpha: isize,
-        mut beta: isize,
-        maximizing: bool,
-    ) -> (isize, usize) {
-        //returns score of the board, then best column (for recursion)
-        //alpha >= beta
-        //base case
-        if depth == 0 || !gamestate.is_not_full() || gamestate.check_for_win() {
-            return (self.evaluate_board(gamestate), 0);
-        }
+
+    // Main minimax function to find the best move
+    fn minimax(&self, gamestate: &mut GameState, depth: usize, maximizing: bool) -> usize {
         let valid_moves = self.generate_moves(gamestate);
-        let mut best_col = valid_moves[0];
+        if valid_moves.is_empty() {
+            return 0; // Default to column 0 if no valid moves (shouldn't happen)
+        }
+        
+        let alpha = isize::MIN;
+        let beta = isize::MAX;
 
         if maximizing {
-            let mut max_eval = isize::MIN;
-            for &col in     &valid_moves {
-                gamestate.play_move(col, false);
-                let (eval, good_col) = self.minimax(gamestate, depth - 1, alpha, beta, false);
-                gamestate.undo_move(col);
-
-                if eval > max_eval {
-                    max_eval = eval as isize;
-                    best_col = good_col;
-                }
-                alpha = alpha.max(eval as isize);
-                if beta <= alpha {
-                    break;
-                }
-            }
-            return (max_eval, best_col)
+            self.maximize(gamestate, depth, alpha, beta)
         } else {
-            let mut min_eval = isize::MAX;
-            for &col in &valid_moves {
-                gamestate.play_move(col, false);
-                let (eval, good_col) = self.minimax(gamestate, depth - 1, alpha, beta, true);
-                //because of recursion, this is somewhere gone on the call stack. 
-                gamestate.undo_move(col);
-                
-                if eval < min_eval {
-                    min_eval = eval as isize;
-                    best_col = good_col;
-                }
-                beta = beta.min(eval as isize);
-                if beta <= alpha {
-                    break;
-                }
-            }
-                return (min_eval, best_col)
-            }
+            self.minimize(gamestate, depth, alpha, beta)
         }
     }
+    
+    fn maximize(&self, gamestate: &mut GameState, depth: usize, alpha: isize, beta: isize) -> usize {
+        let valid_moves = self.generate_moves(gamestate);
+        
+        if depth == 0 || valid_moves.is_empty() || gamestate.check_for_win() {
+            return valid_moves.get(0).copied().unwrap_or(0);
+        }
+        
+        let mut best_score = isize::MIN;
+        let mut best_move = valid_moves[0];
+        let mut current_alpha = alpha;
 
+        for &col in &valid_moves {
+            let mut new_state = gamestate.clone();
+            new_state.play_move(col, false); // AI's move
+            
+            let score = self.evaluate_position(&new_state, depth - 1, current_alpha, beta, false);
+            
+            if score > best_score {
+                best_score = score;
+                best_move = col;
+            }
+            
+            current_alpha = current_alpha.max(best_score);
+            if current_alpha >= beta {
+                break; // Beta cutoff
+            }
+        }
+        
+        best_move
+    }
+    
+    fn minimize(&self, gamestate: &mut GameState, depth: usize, alpha: isize, beta: isize) -> usize {
+        let valid_moves = self.generate_moves(gamestate);
+        
+        if depth == 0 || valid_moves.is_empty() || gamestate.check_for_win() {
+            return valid_moves.get(0).copied().unwrap_or(0);
+        }
+        
+        let mut best_score = isize::MAX;
+        let mut best_move = valid_moves[0];
+        let mut current_beta = beta;
+
+        for &col in &valid_moves {
+            let mut new_state = gamestate.clone();
+            new_state.play_move(col, true); // Human's move
+            
+            let score = self.evaluate_position(&new_state, depth - 1, alpha, current_beta, true);
+            
+            if score < best_score {
+                best_score = score;
+                best_move = col;
+            }
+            
+            current_beta = current_beta.min(best_score);
+            if current_beta <= alpha {
+                break; // Alpha cutoff
+            }
+        }
+        
+        best_move
+    }
+    
+    fn evaluate_position(&self, gamestate: &GameState, depth: usize, alpha: isize, beta: isize, maximizing: bool) -> isize {
+        // Terminal conditions
+        if depth == 0 || self.generate_moves(gamestate).is_empty() || gamestate.check_for_win() {
+            return self.evaluate_board(gamestate);
+        }
+        
+        if maximizing {
+            let mut best_score = isize::MIN;
+            let mut current_alpha = alpha;
+
+            for &col in &self.generate_moves(gamestate) {
+                let mut new_state = gamestate.clone();
+                new_state.play_move(col, false); // AI's move
+
+                let score = self.evaluate_position(&new_state, depth - 1, current_alpha, beta, false);
+                best_score = best_score.max(score);
+                current_alpha = current_alpha.max(best_score);
+                
+                if beta <= current_alpha {
+                    break; // Beta cutoff
+                }
+            }
+            
+            return best_score;
+        } else {
+            let mut best_score = isize::MAX;
+            let mut current_beta = beta;
+
+            for &col in &self.generate_moves(gamestate) {
+                let mut new_state = gamestate.clone();
+                new_state.play_move(col, true); // Human's move
+
+                let score = self.evaluate_position(&new_state, depth - 1, alpha, current_beta, true);
+                best_score = best_score.min(score);
+                current_beta = current_beta.min(best_score);
+                
+                if current_beta <= alpha {
+                    break; // Alpha cutoff
+                }
+            }
+            
+            return best_score;
+        }
+    }
+}
 
 impl Player for MinMaxPlayer {
-    //assign weights to each position on the board.
-    //algorithm will explore depth of 3.
     fn make_move(&mut self, gamestate: &mut GameState) {
-        //both players start with worst possible score. Alpha is -infinity, beta is +infinity
-        //whenever maximum score of minimizing player crosses minimum score of maximizing player
-        //branches of the tree are 'pruned'
         let valid_moves = self.generate_moves(gamestate);
         if valid_moves.is_empty() {
             return;
         }
-        let (_score, col) = self.minimax(gamestate, 3, isize::MIN, isize::MAX, true);
-        gamestate.play_move(col, false);
+        
+        // Find the best move using minimax, with depth 3 and maximizing (AI's turn)
+        let best_move = self.minimax(gamestate, 3, true);
+        gamestate.play_move(best_move, false); // AI makes its move (false = AI)
     }
 }
