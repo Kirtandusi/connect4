@@ -1,6 +1,7 @@
 pub struct GameState {
     pub board: Vec<Vec<usize>>,
     pub exclude: Vec<usize>,
+    pub winner: usize,
 }
 impl GameState {
     // Create a new game state with an empty board
@@ -8,6 +9,7 @@ impl GameState {
         GameState {
             board: vec![vec![0; 7]; 6],
             exclude: Vec::new(),
+            winner: 0,
         }
     }
     pub fn check_if_full(&self, column: usize) -> bool {
@@ -62,7 +64,7 @@ impl GameState {
             println!();
         }
     }
-    pub fn check_for_win(&self) -> bool {
+    pub fn check_for_win(&mut self) -> bool {
         let length = self.board.len();
         let width = self.board[0].len();
         
@@ -85,7 +87,11 @@ impl GameState {
                         count_cpu = 0;
                     }
                 }
-                if count_user == 4 || count_cpu == 4 {
+                if count_cpu == 4 {
+                    self.winner = 2;
+                    return true;
+                } else if count_user == 4 {
+                    self.winner = 1;
                     return true;
                 }
             }
@@ -110,7 +116,11 @@ impl GameState {
                         count_cpu = 0;
                     }
                 }
-                if count_user == 4 || count_cpu == 4 {
+                if count_cpu == 4 {
+                    self.winner = 2;
+                    return true;
+                } else if count_user == 4 {
+                    self.winner = 1;
                     return true;
                 }
             }
@@ -126,6 +136,11 @@ impl GameState {
                     && self.board[i + 2][j + 2] == player
                     && self.board[i + 3][j + 3] == player
                 {
+                    if player == 1 {
+                        self.winner = 1;
+                    } else {
+                        self.winner = 2;
+                    }
                     return true;
                 }
             }
@@ -139,6 +154,11 @@ impl GameState {
                     && self.board[i - 2][j + 2] == player
                     && self.board[i - 3][j + 3] == player
                 {
+                    if player == 1 {
+                        self.winner = 1;
+                    } else {
+                        self.winner = 2;
+                    }
                     return true;
                 }
             }
@@ -151,6 +171,7 @@ impl Clone for GameState {
         Self {
             board: self.board.clone(),
             exclude: self.exclude.clone(),
+            winner: self.winner.clone(),
         }
     }
 }

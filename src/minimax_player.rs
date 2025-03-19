@@ -4,8 +4,8 @@ use crate::player::Player;
 pub struct MinMaxPlayer;
 
 impl MinMaxPlayer {
-    // Evaluate the board state (heuristic function)
     fn evaluate_board(&self, gamestate: &GameState) -> isize {
+        // Heuristic weights matrix (same as before)
         const WEIGHTS: [[isize; 7]; 6] = [
             [3, 4, 5, 7, 5, 4, 3],
             [4, 6, 8, 10, 8, 6, 4],
@@ -28,12 +28,10 @@ impl MinMaxPlayer {
         score
     }
 
-    // Generate all valid moves (columns that are not full)
     fn generate_moves(&self, gamestate: &GameState) -> Vec<usize> {
         (0..7).filter(|&col| !gamestate.check_if_full(col)).collect()
     }
 
-    // Main minimax function with Alpha-Beta pruning
     fn minimax(
         &self,
         gamestate: &mut GameState,
@@ -42,76 +40,67 @@ impl MinMaxPlayer {
         mut beta: isize,
         maximizing: bool,
     ) -> isize {
-        // Check for terminal states (win, lose, or draw)
-        // if gamestate.check_for_win() {
-        //     return if gamestate.winner == 2 {
-        //         isize::MAX // AI wins
-        //     } else if gamestate.winner == 1 {
-        //         isize::MIN // Human wins
-        //     } else {
-        //         0 // Draw
-        //     };
-        // }
-
-        // If depth limit is reached, return the heuristic evaluation
-        if depth == 0 {
-            //return self.evaluate_board(gamestate);
-            return 99999999;
+        // Check for terminal states FIRST
+        if gamestate.check_for_win() {
+            return match gamestate.winner {
+                2 => isize::MAX,  // AI wins
+                1 => isize::MIN,  // Human wins
+                _ => 0,           // Draw (shouldn't happen in standard Connect Four)
+            };
         }
 
-        // Generate all valid moves
+        // Then check depth limit
+        if depth == 0 {
+            return self.evaluate_board(gamestate);
+        }
+
         let valid_moves = self.generate_moves(gamestate);
 
         if maximizing {
-            // Maximizing player (AI)
             let mut max_score = isize::MIN;
             for &col in &valid_moves {
                 let mut new_state = gamestate.clone();
-                new_state.play_move(col, false); // AI's move
-
+                new_state.play_move(col, false);
+                
                 let score = self.minimax(&mut new_state, depth - 1, alpha, beta, false);
                 max_score = max_score.max(score);
                 alpha = alpha.max(max_score);
-
-                // Alpha-Beta pruning
+                
                 if alpha >= beta {
-                    break;
+                    break; // Beta cutoff
                 }
             }
             max_score
         } else {
-            // Minimizing player (Human)
             let mut min_score = isize::MAX;
             for &col in &valid_moves {
                 let mut new_state = gamestate.clone();
-                new_state.play_move(col, true); // Human's move
-
+                new_state.play_move(col, true);
+                
                 let score = self.minimax(&mut new_state, depth - 1, alpha, beta, true);
                 min_score = min_score.min(score);
                 beta = beta.min(min_score);
-
-                // Alpha-Beta pruning
+                
                 if beta <= alpha {
-                    break;
+                    break; // Alpha cutoff
                 }
             }
             min_score
         }
     }
 
-    // Find the best move for the AI
     fn find_best_move(&self, gamestate: &GameState, depth: usize) -> usize {
         let mut best_score = isize::MIN;
-        let mut best_move = 0; // Default to column 0 if no valid moves
+        let mut best_move = 0;
         let alpha = isize::MIN;
         let beta = isize::MAX;
 
         for &col in &self.generate_moves(gamestate) {
             let mut new_state = gamestate.clone();
-            new_state.play_move(col, false); // AI's move
-
+            new_state.play_move(col, false);
+            
             let score = self.minimax(&mut new_state, depth - 1, alpha, beta, false);
-            if score > best_score {
+            if score > best_score || (score == best_score && col == 3) { // Prefer center column
                 best_score = score;
                 best_move = col;
             }
@@ -123,7 +112,7 @@ impl MinMaxPlayer {
 
 impl Player for MinMaxPlayer {
     fn make_move(&mut self, gamestate: &mut GameState) {
-        let best_move = self.find_best_move(gamestate, 5); // Adjust depth as needed
-        gamestate.play_move(best_move, false); // AI makes its move
+        let best_move = self.find_best_move(gamestate, 5); // Depth 5
+        gamestate.play_move(best_move, false);
     }
 }
