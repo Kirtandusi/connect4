@@ -4,8 +4,7 @@ use crate::player::Player;
 pub struct NeuralNetPlayer;
 
 impl NeuralNetPlayer {
-
-
+    
 }
 impl Player for NeuralNetPlayer {
     fn make_move(&mut self, game_state: &mut GameState) {

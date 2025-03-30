@@ -4,6 +4,7 @@ mod game_state;
 mod player;
 mod random_player;
 mod minimax_player;
+mod neuralnet_player;
 
 use game_state::GameState;
 use player::Player;

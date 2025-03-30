@@ -67,7 +67,7 @@ impl GameState {
     pub fn check_for_win(&mut self) -> bool {
         let length = self.board.len();
         let width = self.board[0].len();
-        
+
         //horizontal checks
         for i in 0..length {
             let mut count_user: usize = 0;
@@ -96,7 +96,7 @@ impl GameState {
                 }
             }
         }
-        
+
         //vertical checks
         for i in 0..width {
             let mut count_user: usize = 0;
