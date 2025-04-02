@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, process};
 
 mod game_state;
 mod player;
@@ -10,6 +10,7 @@ use game_state::GameState;
 use player::Player;
 use random_player::RandomPlayer;
 use minimax_player::MinMaxPlayer;
+
 fn main() {
     input();
 }
@@ -38,12 +39,12 @@ fn choose() -> Option<Box<dyn Player>> {
             return Some(Box::new(MinMaxPlayer {}));
         }
         "4" => {
-            println!("Neural Network Player is not implemented yet.");
-            return Some(Box::new(RandomPlayer {}));
+            println!("You have selected Neural Network Player.");
+
         }
         "5" => {
             println!("Exiting game.");
-            return Some(Box::new(RandomPlayer {}));
+            process::exit(0);
         }
         _ => {
             println!("Invalid choice. Please select a valid option (1-5).");
