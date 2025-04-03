@@ -24,4 +24,8 @@ impl Player for RandomPlayer {
             self.make_move(gamestate)
         }
     }
+
+    fn get_name(&self) -> &str {
+       "Random Player"
+    }
 }

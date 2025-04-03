@@ -21,6 +21,7 @@ fn choose() -> Option<Box<dyn Player>> {
     println!("3. Min-Max Player");
     println!("4. Neural Network Player");
     println!("5. Quit");
+    println!("6. Simulate MinMax vs Random");
     let mut choice = String::new();
     io::stdin()
         .read_line(&mut choice)
@@ -46,13 +47,18 @@ fn choose() -> Option<Box<dyn Player>> {
             println!("Exiting game.");
             process::exit(0);
         }
+        "6" => {
+            println!("Simulating...");
+            let mut player1 = RandomPlayer {};
+            let mut player2 = MinMaxPlayer {};
+            simulate(&mut player1, &mut player2);
+        }
         _ => {
             println!("Invalid choice. Please select a valid option (1-5).");
         }
     }
     None
 }
-
 fn input() {
     let options = choose();
     if options.is_none() {
@@ -126,4 +132,37 @@ fn input() {
         }
     }
     println!("Game over");
+}
+fn simulate(player1: &mut dyn Player, player2: &mut dyn Player) {
+    println!("{}", format!("Starting Connect 4 simulation between {} and {}", player1.get_name(), player2.get_name()));
+    let mut board = GameState::new();
+    board.board_to_string(); // Print the initial state of the board
+
+    while board.is_not_full() {
+        // Player 1's move
+        player1.make_move(&mut board);
+        println!("{}", format!("{} {}", player1.get_name(), "'s move:"));
+        board.board_to_string();
+
+        if board.check_for_win() {
+            println!("{}", format!("{} {}", player1.get_name(), "wins!"));
+            return;
+        }
+
+        if !board.is_not_full() {
+            break; // Break if the board is full after Player 1's move
+        }
+
+        // Player 2's move
+        player2.make_move(&mut board);
+        println!("{}", format!("{} {}", player2.get_name(), "'s move:"));
+        board.board_to_string();
+
+        if board.check_for_win() {
+            println!("{}", format!("{} {}", player2.get_name(), "wins!"));
+            return;
+        }
+    }
+
+    println!("Game over. It's a draw!");
 }

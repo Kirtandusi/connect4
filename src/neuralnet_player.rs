@@ -46,4 +46,7 @@ impl Player for NeuralNetPlayer {
     fn make_move(&mut self, game_state: &mut GameState) {
         // Implement the logic to make a move using the neural network
     }
+    fn get_name(&self) -> &str {
+        "Neural Net Player"
+    }
 }
