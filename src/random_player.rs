@@ -1,7 +1,15 @@
 use crate::game_state::GameState;
 use crate::player::Player;
 use rand::Rng;
-pub struct RandomPlayer;
+pub struct RandomPlayer {
+    player: bool,
+}
+impl RandomPlayer {
+    pub(crate) fn new(player: bool) -> Self {
+        RandomPlayer { player }
+    }
+}
+
 impl Player for RandomPlayer {
     fn make_move(&mut self, gamestate: &mut GameState) {
         if gamestate.exclude.len() == 7 {
@@ -18,7 +26,7 @@ impl Player for RandomPlayer {
         }
         let column = valid_columns[rng.gen_range(0..valid_columns.len())];
         if !gamestate.check_if_full(column) {
-            gamestate.play_move(column, false); // CPU move
+            gamestate.play_move(column, self.player); // CPU move
         } else {
             gamestate.exclude.push(column);
             self.make_move(gamestate)

@@ -41,9 +41,9 @@ impl GameState {
         if top_of_column == 6 {
             println!("Column is full, please choose another column");
         } else if side {
-            self.board[top_of_column][column] = 1; // Player move
+            self.board[top_of_column][column] = 1; // Player 1
         } else {
-            self.board[top_of_column][column] = 2; // CPU move
+            self.board[top_of_column][column] = 2; // Player 2
         }
     }
 

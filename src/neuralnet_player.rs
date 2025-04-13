@@ -37,13 +37,21 @@ impl NeuralNetwork {
 
     }
 }
-pub struct NeuralNetPlayer;
+pub struct NeuralNetPlayer {
+    player: bool,
+}
+
+impl NeuralNetPlayer {
+    pub(crate) fn new(player: bool) -> Self {
+        NeuralNetPlayer { player }
+    }
+}
 
 impl NeuralNetPlayer {
 
 }
 impl Player for NeuralNetPlayer {
-    fn make_move(&mut self, game_state: &mut GameState) {
+    fn make_move(&mut self, _game_state: &mut GameState) {
         // Implement the logic to make a move using the neural network
     }
     fn get_name(&self) -> &str {

@@ -1,9 +1,15 @@
 use crate::game_state::GameState;
+use crate::human::HumanPlayer;
 use crate::player::Player;
 
-pub struct MinMaxPlayer;
+pub struct MinMaxPlayer {
+    player: bool,
+}
 
 impl MinMaxPlayer {
+    pub fn new( player: bool) -> Self {
+        MinMaxPlayer { player }
+    }
     fn evaluate_board(&self, gamestate: &GameState) -> isize {
         // Heuristic weights matrix (same as before)
         const WEIGHTS: [[isize; 7]; 6] = [
@@ -60,7 +66,7 @@ impl MinMaxPlayer {
             let mut max_score = isize::MIN;
             for &col in &valid_moves {
                 let mut new_state = gamestate.clone();
-                new_state.play_move(col, false);
+                new_state.play_move(col, self.player);
                 
                 let score = self.minimax(&mut new_state, depth - 1, alpha, beta, false);
                 max_score = max_score.max(score);

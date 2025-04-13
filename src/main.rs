@@ -5,53 +5,86 @@ mod player;
 mod random_player;
 mod minimax_player;
 mod neuralnet_player;
+mod human;
 
 use game_state::GameState;
 use player::Player;
 use random_player::RandomPlayer;
 use minimax_player::MinMaxPlayer;
+use neuralnet_player::NeuralNetPlayer;
+use human::HumanPlayer;
 
 fn main() {
+    println!("Welcome to Connect-4!");
     input();
 }
-fn choose() -> Option<Box<dyn Player>> {
-    println!("Welcome to Connect 4. Choose an opponent.");
-    println!("1. Random-Placement Player");
-    println!("2. Algorithmic Player");
+fn choose_player1() -> Option<Box<dyn Player>> {
+    println!("1. Human Player");
+    println!("2. Random-Placement Player");
     println!("3. Min-Max Player");
     println!("4. Neural Network Player");
     println!("5. Quit");
-    println!("6. Simulate MinMax vs Random");
     let mut choice = String::new();
     io::stdin()
         .read_line(&mut choice)
         .expect("Failed to read input");
     match choice.trim() {
         "1" => {
-            println!("You have selected Random Player.");
-            return Some(Box::new(RandomPlayer {}));
+            println!("You have selected Human Player.");
+            return Some(Box::new(HumanPlayer::new(true)));
         }
         "2" => {
-            println!("Algorithmic Player is not implemented yet.");
-            return Some(Box::new(RandomPlayer {}));
+            println!("You have selected Random Player.");
+            return Some(Box::new(RandomPlayer::new(true)));
         }
         "3" => {
             println!("You have selected Min-Max Player.");
-            return Some(Box::new(MinMaxPlayer {}));
+            return Some(Box::new(MinMaxPlayer::new(true)));
         }
         "4" => {
             println!("You have selected Neural Network Player.");
-
+            return Some(Box::new(NeuralNetPlayer::new(true)));
         }
         "5" => {
             println!("Exiting game.");
             process::exit(0);
         }
-        "6" => {
-            println!("Simulating...");
-            let mut player1 = RandomPlayer {};
-            let mut player2 = MinMaxPlayer {};
-            simulate(&mut player1, &mut player2);
+        _ => {
+            println!("Invalid choice. Please select a valid option (1-5).");
+        }
+    }
+    None
+}
+fn choose_player2() -> Option<Box<dyn Player>> {
+    println!("1. Human Player");
+    println!("2. Random-Placement Player");
+    println!("3. Min-Max Player");
+    println!("4. Neural Network Player");
+    println!("5. Quit");
+    let mut choice = String::new();
+    io::stdin()
+        .read_line(&mut choice)
+        .expect("Failed to read input");
+    match choice.trim() {
+        "1" => {
+            println!("You have selected Human Player.");
+            return Some(Box::new(HumanPlayer::new(false)));
+        }
+        "2" => {
+            println!("You have selected Random Player.");
+            return Some(Box::new(RandomPlayer::new(false)));
+        }
+        "3" => {
+            println!("You have selected Min-Max Player.");
+            return Some(Box::new(MinMaxPlayer::new(false)));
+        }
+        "4" => {
+            println!("You have selected Neural Network Player.");
+            return Some(Box::new(NeuralNetPlayer::new(false)));
+        }
+        "5" => {
+            println!("Exiting game.");
+            process::exit(0);
         }
         _ => {
             println!("Invalid choice. Please select a valid option (1-5).");
@@ -60,78 +93,35 @@ fn choose() -> Option<Box<dyn Player>> {
     None
 }
 fn input() {
-    let options = choose();
-    if options.is_none() {
+    println!("Choose Player 1.");
+    let p1_options = choose_player1();
+    println!("Choose Player 2.");
+    let p2_options = choose_player2();
+    if p1_options.is_none() || p2_options.is_none() {
         return;
     }
-    let mut cpu = options.unwrap();
+    let mut player1 = p1_options.unwrap();
+    let mut player2 = p2_options.unwrap();
     println!(
-        "User goes first. Player moves get marked with a 1, and CPU moves get marked with a 2."
+        "Player 1 goes first. Player 1 get marked with a 1, and Player 2 get marked with a 2."
     );
-    //let mut loss = false;
-
     // Initialize the board using GameState::new()
     let mut board = GameState::new();
     board.board_to_string(); // No need for `self` here
-
-    let mut input_str: String = String::new();
     while board.is_not_full() {
-        // input cycle
-        input_str.clear();
-        println!("Please choose a column to drop your piece. Input range is 1-7");
-        io::stdin()
-            .read_line(&mut input_str)
-            .expect("Failed to read input");
-
-        let mut column: usize = match input_str.trim().parse() {
-            Ok(num) => num,
-            Err(_) => {
-                println!("Invalid input, please try again");
-                continue;
-            }
-        };
-
-        if !(1..=7).contains(&column) {
-            println!("Invalid input, please try again");
-            continue;
-        }
-        column -= 1; // Convert to 0-based index
-        println!();
-
-        if !board.check_if_full(column) {
-            board.play_move(column, true); // Player move
-        }
-
+        player1.make_move(&mut board);
+        board.board_to_string();
         if board.check_for_win() {
-            board.board_to_string();
-            println!("You win!");
-            //loss = true;
+            println!("Player 1 wins!");
             return;
         }
-
-        board.board_to_string(); // No need for `self` here
-        println!("This is the new board after your move.");
-
-        cpu.make_move(&mut board); // CPU move
-
-        println!();
-        board.board_to_string(); // No need for `self` here
-
+        player2.make_move(&mut board);
+        board.board_to_string();
         if board.check_for_win() {
-            println!();
-            board.board_to_string();
-            println!("CPU wins!");
-            //loss = true;
-            return;
-        } else {
-            print!("This is the new board after the CPU's turn. ");
-            if board.is_not_full() {
-                println!("Your move.");
-            }
-            println!();
+            println!("Player 2 wins!");
         }
     }
-    println!("Game over");
+    println!("Game over.");
 }
 fn simulate(player1: &mut dyn Player, player2: &mut dyn Player) {
     println!("{}", format!("Starting Connect 4 simulation between {} and {}", player1.get_name(), player2.get_name()));
