@@ -18,7 +18,7 @@ fn main() {
     println!("Welcome to Connect-4!");
     input();
 }
-fn choose_player1() -> Option<Box<dyn Player>> {
+fn choose_player1(side: bool) -> Option<Box<dyn Player>> {
     println!("1. Human Player");
     println!("2. Random-Placement Player");
     println!("3. Min-Max Player");
@@ -31,56 +31,19 @@ fn choose_player1() -> Option<Box<dyn Player>> {
     match choice.trim() {
         "1" => {
             println!("You have selected Human Player.");
-            return Some(Box::new(HumanPlayer::new(true)));
+            return Some(Box::new(HumanPlayer::new(side)));
         }
         "2" => {
             println!("You have selected Random Player.");
-            return Some(Box::new(RandomPlayer::new(true)));
+            return Some(Box::new(RandomPlayer::new(side)));
         }
         "3" => {
             println!("You have selected Min-Max Player.");
-            return Some(Box::new(MinMaxPlayer::new(true)));
+            return Some(Box::new(MinMaxPlayer::new(side)));
         }
         "4" => {
             println!("You have selected Neural Network Player.");
-            return Some(Box::new(NeuralNetPlayer::new(true)));
-        }
-        "5" => {
-            println!("Exiting game.");
-            process::exit(0);
-        }
-        _ => {
-            println!("Invalid choice. Please select a valid option (1-5).");
-        }
-    }
-    None
-}
-fn choose_player2() -> Option<Box<dyn Player>> {
-    println!("1. Human Player");
-    println!("2. Random-Placement Player");
-    println!("3. Min-Max Player");
-    println!("4. Neural Network Player");
-    println!("5. Quit");
-    let mut choice = String::new();
-    io::stdin()
-        .read_line(&mut choice)
-        .expect("Failed to read input");
-    match choice.trim() {
-        "1" => {
-            println!("You have selected Human Player.");
-            return Some(Box::new(HumanPlayer::new(false)));
-        }
-        "2" => {
-            println!("You have selected Random Player.");
-            return Some(Box::new(RandomPlayer::new(false)));
-        }
-        "3" => {
-            println!("You have selected Min-Max Player.");
-            return Some(Box::new(MinMaxPlayer::new(false)));
-        }
-        "4" => {
-            println!("You have selected Neural Network Player.");
-            return Some(Box::new(NeuralNetPlayer::new(false)));
+            return Some(Box::new(NeuralNetPlayer::new(side)));
         }
         "5" => {
             println!("Exiting game.");
@@ -94,9 +57,9 @@ fn choose_player2() -> Option<Box<dyn Player>> {
 }
 fn input() {
     println!("Choose Player 1.");
-    let p1_options = choose_player1();
+    let p1_options = choose_player1(true);
     println!("Choose Player 2.");
-    let p2_options = choose_player2();
+    let p2_options = choose_player1(false);
     if p1_options.is_none() || p2_options.is_none() {
         return;
     }
