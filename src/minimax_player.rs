@@ -1,5 +1,4 @@
 use crate::game_state::GameState;
-use crate::human::HumanPlayer;
 use crate::player::Player;
 
 pub struct MinMaxPlayer {

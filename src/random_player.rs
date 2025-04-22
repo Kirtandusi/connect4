@@ -5,7 +5,7 @@ pub struct RandomPlayer {
     player: bool,
 }
 impl RandomPlayer {
-    pub(crate) fn new(player: bool) -> Self {
+    pub fn new(player: bool) -> Self {
         RandomPlayer { player }
     }
 }

@@ -35,7 +35,9 @@ impl GameState {
         }
         6
     }
-
+    /*
+    takes mutable reference because it must change the gamestate.
+     */
     pub fn play_move(&mut self, column: usize, side: bool) {
         let top_of_column = self.top(column);
         if top_of_column == 6 {
@@ -70,27 +72,28 @@ impl GameState {
 
         //horizontal checks
         for i in 0..length {
-            let mut count_user: usize = 0;
-            let mut count_cpu: usize = 0;
+            let mut count_1: usize = 0;
+            let mut count_2: usize = 0;
+            //horizontal checks
             for j in 0..width {
                 match self.board[i][j] {
                     1 => {
-                        count_user += 1;
-                        count_cpu = 0;
+                        count_1 += 1;
+                        count_2 = 0;
                     }
                     2 => {
-                        count_cpu += 1;
-                        count_user = 0;
+                        count_2 += 1;
+                        count_1 = 0;
                     }
                     _ => {
-                        count_user = 0;
-                        count_cpu = 0;
+                        count_1 = 0;
+                        count_2 = 0;
                     }
                 }
-                if count_cpu == 4 {
+                if count_2 == 4 {
                     self.winner = 2;
                     return true;
-                } else if count_user == 4 {
+                } else if count_1 == 4 {
                     self.winner = 1;
                     return true;
                 }
@@ -99,27 +102,27 @@ impl GameState {
 
         //vertical checks
         for i in 0..width {
-            let mut count_user: usize = 0;
-            let mut count_cpu: usize = 0;
+            let mut count_1: usize = 0;
+            let mut count_2: usize = 0;
             for j in 0..length {
                 match self.board[j][i] {
                     1 => {
-                        count_user += 1;
-                        count_cpu = 0;
+                        count_1 += 1;
+                        count_2 = 0;
                     }
                     2 => {
-                        count_cpu += 1;
-                        count_user = 0;
+                        count_2 += 1;
+                        count_1 = 0;
                     }
                     _ => {
-                        count_user = 0;
-                        count_cpu = 0;
+                        count_1 = 0;
+                        count_2 = 0;
                     }
                 }
-                if count_cpu == 4 {
+                if count_2 == 4 {
                     self.winner = 2;
                     return true;
-                } else if count_user == 4 {
+                } else if count_1 == 4 {
                     self.winner = 1;
                     return true;
                 }

@@ -71,51 +71,22 @@ fn input() {
     // Initialize the board using GameState::new()
     let mut board = GameState::new();
     board.board_to_string(); // No need for `self` here
+    println!();
     while board.is_not_full() {
         player1.make_move(&mut board);
         board.board_to_string();
+        println!();
         if board.check_for_win() {
             println!("Player 1 wins!");
             return;
         }
         player2.make_move(&mut board);
         board.board_to_string();
+        println!();
         if board.check_for_win() {
             println!("Player 2 wins!");
+            return;
         }
     }
     println!("Game over.");
-}
-fn simulate(player1: &mut dyn Player, player2: &mut dyn Player) {
-    println!("{}", format!("Starting Connect 4 simulation between {} and {}", player1.get_name(), player2.get_name()));
-    let mut board = GameState::new();
-    board.board_to_string(); // Print the initial state of the board
-
-    while board.is_not_full() {
-        // Player 1's move
-        player1.make_move(&mut board);
-        println!("{}", format!("{} {}", player1.get_name(), "'s move:"));
-        board.board_to_string();
-
-        if board.check_for_win() {
-            println!("{}", format!("{} {}", player1.get_name(), "wins!"));
-            return;
-        }
-
-        if !board.is_not_full() {
-            break; // Break if the board is full after Player 1's move
-        }
-
-        // Player 2's move
-        player2.make_move(&mut board);
-        println!("{}", format!("{} {}", player2.get_name(), "'s move:"));
-        board.board_to_string();
-
-        if board.check_for_win() {
-            println!("{}", format!("{} {}", player2.get_name(), "wins!"));
-            return;
-        }
-    }
-
-    println!("Game over. It's a draw!");
 }
