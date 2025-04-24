@@ -5,14 +5,14 @@ mod player;
 mod random_player;
 mod minimax_player;
 mod neuralnet_player;
-mod human;
+mod human_player;
 
 use game_state::GameState;
 use player::Player;
 use random_player::RandomPlayer;
 use minimax_player::MinMaxPlayer;
 use neuralnet_player::NeuralNetPlayer;
-use human::HumanPlayer;
+use human_player::HumanPlayer;
 
 fn main() {
     println!("Welcome to Connect-4!");

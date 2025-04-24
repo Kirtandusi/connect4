@@ -118,7 +118,7 @@ impl MinMaxPlayer {
 impl Player for MinMaxPlayer {
     fn make_move(&mut self, gamestate: &mut GameState) {
         let best_move = self.find_best_move(gamestate, 5); // Depth 5
-        gamestate.play_move(best_move, false);
+        gamestate.play_move(best_move, self.player);
     }
     fn get_name(&self) -> &str {
         "Minimax Player"
