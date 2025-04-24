@@ -26,7 +26,21 @@ impl GameState {
         }
         false
     }
-
+    pub fn to_input_vector(&self) -> Vec<f64> {
+        let mut input = Vec::with_capacity(42);
+        for row in 0..6 {
+            for col in 0..7 {
+                let value = match self.board[row][col] {
+                    0 => 0.0,  // Empty
+                    1 => 1.0,  // Player 1
+                    2 => -1.0, // Player 2
+                    _ => panic!("Invalid value in board!"),
+                };
+                input.push(value);
+            }
+        }
+        input
+    }
     pub fn top(&self, column: usize) -> usize {
         for i in (0..6).rev() {
             if self.board[i][column] == 0 {

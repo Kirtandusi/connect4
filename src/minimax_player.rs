@@ -45,12 +45,12 @@ impl MinMaxPlayer {
         mut beta: isize,
         maximizing: bool,
     ) -> isize {
-        // Check for terminal states FIRST
+        // Check for terminal states
         if gamestate.check_for_win() {
             return match gamestate.winner {
-                2 => isize::MAX,  // AI wins
-                1 => isize::MIN,  // Human wins
-                _ => 0,           // Draw (shouldn't happen in standard Connect Four)
+                2 => isize::MAX,  // player 2 wins
+                1 => isize::MIN,  // player 1 wins
+                _ => 0,           // draw but should never happen
             };
         }
 
@@ -71,7 +71,7 @@ impl MinMaxPlayer {
                 max_score = max_score.max(score);
                 alpha = alpha.max(max_score);
                 
-                if alpha >= beta {
+                if alpha >= beta { //pruning
                     break; // Beta cutoff
                 }
             }

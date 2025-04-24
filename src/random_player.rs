@@ -16,7 +16,7 @@ impl Player for RandomPlayer {
             println!("Board is full, game is a tie!");
             return;
         }
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let valid_columns: Vec<usize> = (0..7)
             .filter(|&x| !gamestate.exclude.contains(&x))
             .collect();
@@ -24,7 +24,7 @@ impl Player for RandomPlayer {
             println!("No valid columns left, game over!");
             return;
         }
-        let column = valid_columns[rng.gen_range(0..valid_columns.len())];
+        let column = valid_columns[rng.random_range(0..valid_columns.len())];
         if !gamestate.check_if_full(column) {
             gamestate.play_move(column, self.player); // CPU move
         } else {
