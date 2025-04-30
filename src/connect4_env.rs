@@ -1,0 +1,67 @@
+use rand::Rng;
+use crate::game_state::GameState;
+
+pub struct Connect4Env {
+    game: GameState,
+    player: bool, // true = player 1, false = player 2
+}
+
+impl Connect4Env {
+    pub fn new(player: bool) -> Self {
+        Self {
+            game: GameState::new(),
+            player,
+        }
+    }
+
+    pub fn reset(&mut self) -> Vec<f64> {
+        self.game = GameState::new();
+        self.game.to_input_vector()
+    }
+
+    pub fn step(&mut self, action: usize) -> (Vec<f64>, f64, bool) {
+        let mut reward = 0.0;
+        self.game.play_move(action, self.player);
+
+        if self.game.check_for_win() {
+            reward = 1.0;
+            return (self.game.to_input_vector(), reward, true);
+        }
+
+        if !self.game.is_not_full() {
+            // Game is a draw
+            reward = 0.5;
+            return (self.game.to_input_vector(), reward, true);
+        }
+
+        // Let opponent (random) play
+        let opponent_action = self.sample_random_action();
+        self.game.play_move(opponent_action, !self.player);
+
+        if self.game.check_for_win() {
+            reward = -1.0;
+            return (self.game.to_input_vector(), reward, true);
+        }
+
+        if !self.game.is_not_full() {
+            reward = 0.5;
+            return (self.game.to_input_vector(), reward, true);
+        }
+
+        (self.game.to_input_vector(), reward, false)
+    }
+
+    pub fn valid_moves(&self) -> Vec<usize> {
+        (0..7).filter(|&col| !self.game.check_if_full(col)).collect()
+    }
+
+    pub fn sample_random_action(&self) -> usize {
+        let valid = self.valid_moves();
+        let idx = rand::rng(0, valid.len());
+        valid[idx]
+    }
+
+    pub fn get_state_vector(&self) -> Vec<f64> {
+        self.game.to_input_vector()
+    }
+}
