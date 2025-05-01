@@ -6,6 +6,7 @@ mod random_player;
 mod minimax_player;
 mod neuralnet_player;
 mod human_player;
+mod connect4_env;
 
 use game_state::GameState;
 use player::Player;
@@ -13,6 +14,7 @@ use random_player::RandomPlayer;
 use minimax_player::MinMaxPlayer;
 use neuralnet_player::NeuralNetPlayer;
 use human_player::HumanPlayer;
+use crate::connect4_env::Connect4Env;
 
 fn main() {
     println!("Welcome to Connect-4!");
@@ -43,7 +45,9 @@ fn choose_player1(side: bool) -> Option<Box<dyn Player>> {
         }
         "4" => {
             println!("You have selected Neural Network Player.");
-            return Some(Box::new(NeuralNetPlayer::new(side)));
+            println!("Training AI...");
+            let trained_player = train_neural_net(side);
+            return Some(Box::new(trained_player));
         }
         "5" => {
             println!("Exiting game.");
@@ -89,4 +93,11 @@ fn input() {
         }
     }
     println!("Game over.");
+}
+
+fn train_neural_net(side: bool) -> NeuralNetPlayer {
+    let mut env = Connect4Env::new(side);
+    let mut ai_player = NeuralNetPlayer::new(side);
+    ai_player.network.train(&mut env);
+    ai_player
 }

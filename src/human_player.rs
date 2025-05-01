@@ -27,7 +27,7 @@ impl Player for HumanPlayer {
         game_state.board_to_string();
 
         loop {
-            let mut input = self.read_input("Enter your move (column 1-7): ");
+            let input = self.read_input("Enter your move (column 1-7): ");
             match input.parse::<usize>() {
                 Ok(column) if column <= 7 && column >= 1 => {
                     if !game_state.check_if_full(column-1) {

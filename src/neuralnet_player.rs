@@ -1,9 +1,8 @@
 use crate::game_state::GameState;
 use crate::player::Player;
 use rand::Rng;
-use connect4::connect4_env::Connect4Env;
-use connect4_env::Connect4Env;
-struct Neuron {
+use crate::connect4_env::Connect4Env;
+pub(crate) struct Neuron {
     weights: Vec<f64>,   // Weights for each input
     bias: f64,           // Bias value
     activation: fn(f64) -> f64, // Activation function
@@ -19,15 +18,16 @@ impl Neuron {
     }
 }
 type Layer = Vec<Neuron>; //each layer is a vector of Neurons
-struct NeuralNetwork {
+pub struct NeuralNetwork {
     layers: Vec<Layer>,
+    learning_rate: f64,
 }
 
 impl NeuralNetwork {
     pub fn new(layers: Vec<Layer>, learning_rate: f64) -> Self {
-        Self { layers }
+        Self { layers, learning_rate }
     }
-    fn train(&mut self, env: &mut Connect4Env) {
+    pub fn train(&mut self, env: &mut Connect4Env) {
         let mut epsilon = 1.0;
         let epsilon_min = 0.01;
         let epsilon_decay = 0.999;
@@ -35,7 +35,7 @@ impl NeuralNetwork {
         let learning_rate = 0.1;
         let discount_factor = 0.99;
 
-        for i in 0..episodes {
+        for _ in 0..episodes {
             env.reset();
             let mut done = false;
             let mut state = env.get_state_vector();
@@ -92,30 +92,50 @@ impl NeuralNetwork {
         current_input
     }
     pub fn back(&mut self, _input: &Vec<f64>, _target: &Vec<f64>) {}
+
+    fn argmax_valid_action(&self, q_values: &Vec<f64>, env: &Connect4Env) -> usize {
+        let valid = env.valid_moves();
+        *valid
+            .iter()
+            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
+            .unwrap()
+    }
 }
 pub struct NeuralNetPlayer {
     player: bool,
-    network: NeuralNetwork,
+    pub network: NeuralNetwork,
 }
 
 //deep Q learning implementation.
 impl NeuralNetPlayer {
-    pub(crate) fn new(player: bool) -> Self {
+    pub fn new(player: bool) -> Self {
         let input_size = 42; //connect 4 is 7x6
         let hidden_size = 10; //just a random number - CHANGE THIS MAYBE?
         let output_size = 7; //7 columns AI can move.
         let mut rng = rand::rng();
-        //implement code here!!!
 
         //initialize hidden layer.
         //random weights, biases
-        let hidden_layer: Layer = vec![];
-        //initialize output layer
-        //random weights, biases,
-        let output_layer: Layer = vec![];
+        let hidden_layer: Layer = (0..hidden_size)
+            .map(|_| {
+                let weights: Vec<f64> = (0..input_size).map(|_| rng.random_range(-1.0..1.0)).collect();
+                let bias = rng.random_range(-1.0..1.0);
+                Neuron::new(weights, bias, Neuron::relu_activation)
+            })
+            .collect();
+        let output_layer: Layer = (0..output_size)
+            .map(|_| {
+                let weights: Vec<f64> = (0..hidden_size).map(|_| rng.random_range(-1.0..1.0)).collect();
+                let bias = rng.random_range(-1.0..1.0);
+                Neuron::new(weights, bias, Neuron::relu_activation)
+            })
+            .collect();
+
+
 
         let network = NeuralNetwork {
             layers: vec![hidden_layer, output_layer],
+            learning_rate: 0.1,
         };
 
         Self {
@@ -127,31 +147,18 @@ impl NeuralNetPlayer {
 //actual player impl.
 impl Player for NeuralNetPlayer {
     fn make_move(&mut self, game_state: &mut GameState) {
-        // Implement the o make a move using the neural network
         let input = game_state.to_input_vector();
-        let output = self.network.forward(&input);
+        let q_values = self.network.forward(&input);
 
-        let mut best_index = 0;
-        let mut best_value = output[0];
-
-        for (i, val) in output.iter().enumerate() {
-            if val > &best_value {
-                best_index = i;
-                best_value = *val;
-            }
-        }
-        let best_action = best_index;
+        let valid_moves = (0..7).filter(|&c| !game_state.check_if_full(c)).collect::<Vec<_>>();
+        let best_action = *valid_moves
+            .iter()
+            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
+            .unwrap();
 
         game_state.play_move(best_action, self.player);
     }
     fn get_name(&self) -> &str {
         "Neural Net Player"
     }
-}
-
-fn main() {
-    let mut env = Connect4Env::new(true);
-    let mut ai_player = NeuralNetPlayer::new(true);
-    ai_player.network.train(&mut env);
-
 }

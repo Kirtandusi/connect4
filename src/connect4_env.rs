@@ -57,7 +57,8 @@ impl Connect4Env {
 
     pub fn sample_random_action(&self) -> usize {
         let valid = self.valid_moves();
-        let idx = rand::rng(0, valid.len());
+        let mut rng = rand::rng();
+        let idx = rng.random_range(0..valid.len());
         valid[idx]
     }
 
