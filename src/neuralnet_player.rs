@@ -132,7 +132,6 @@ impl NeuralNetPlayer {
             .collect();
 
 
-
         let network = NeuralNetwork {
             layers: vec![hidden_layer, output_layer],
             learning_rate: 0.1,
@@ -150,7 +149,7 @@ impl Player for NeuralNetPlayer {
         let input = game_state.to_input_vector();
         let q_values = self.network.forward(&input);
 
-        let valid_moves = (0..7).filter(|&c| !game_state.check_if_full(c)).collect::<Vec<_>>();
+        let valid_moves = game_state.get_valid_moves();
         let best_action = *valid_moves
             .iter()
             .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())

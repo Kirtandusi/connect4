@@ -182,6 +182,9 @@ impl GameState {
         }
         false
     }
+    pub fn get_valid_moves(&self) -> Vec<usize> {
+        (0..7).filter(|&col| !self.check_if_full(col)).collect()
+    }
 }
 impl Clone for GameState {
     fn clone(&self) -> Self {

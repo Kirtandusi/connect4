@@ -1,9 +1,12 @@
 use rand::Rng;
 use crate::game_state::GameState;
 
+/*
+    helper file used for back propagation.
+ */
 pub struct Connect4Env {
     game: GameState,
-    player: bool, // true = player 1, false = player 2
+    player: bool,
 }
 
 impl Connect4Env {
@@ -19,6 +22,7 @@ impl Connect4Env {
         self.game.to_input_vector()
     }
 
+    //change rewards?
     pub fn step(&mut self, action: usize) -> (Vec<f64>, f64, bool) {
         let mut reward = 0.0;
         self.game.play_move(action, self.player);
@@ -52,7 +56,7 @@ impl Connect4Env {
     }
 
     pub fn valid_moves(&self) -> Vec<usize> {
-        (0..7).filter(|&col| !self.game.check_if_full(col)).collect()
+        self.game.get_valid_moves()
     }
 
     pub fn sample_random_action(&self) -> usize {

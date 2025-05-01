@@ -33,9 +33,6 @@ impl MinMaxPlayer {
         score
     }
 
-    fn generate_moves(&self, gamestate: &GameState) -> Vec<usize> {
-        (0..7).filter(|&col| !gamestate.check_if_full(col)).collect()
-    }
 
     fn minimax(
         &self,
@@ -97,8 +94,8 @@ impl MinMaxPlayer {
     fn find_best_move(&self, gamestate: &GameState, depth: usize) -> usize {
         let mut best_score = isize::MIN;
         let mut best_move = 0;
-        let alpha = isize::MIN;
-        let beta = isize::MAX;
+        let alpha = isize::MIN; //negative infinity
+        let beta = isize::MAX; //positive infinity
 
         for &col in &self.generate_moves(gamestate) {
             let mut new_state = gamestate.clone();
@@ -117,7 +114,7 @@ impl MinMaxPlayer {
 
 impl Player for MinMaxPlayer {
     fn make_move(&mut self, gamestate: &mut GameState) {
-        let best_move = self.find_best_move(gamestate, 5); // Depth 5
+        let best_move = self.find_best_move(gamestate, 5); // 5 layers of depth
         gamestate.play_move(best_move, self.player);
     }
     fn get_name(&self) -> &str {
