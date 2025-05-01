@@ -7,8 +7,8 @@ use connect4::neuralnet_player::NeuralNetPlayer;
 
 /// Simulates `number_of_tests` games and asserts basic stats.
 fn simulate_n_games(mut player1: Box<dyn Player>, mut player2: Box<dyn Player>, number_of_tests: usize) -> (usize, usize, usize) {
-    let mut random_wins = 0;
-    let mut minimax_wins = 0;
+    let mut player1_wins = 0;
+    let mut player2_wins = 0;
     let mut draws = 0;
 
     for _ in 0..number_of_tests {
@@ -36,13 +36,13 @@ fn simulate_n_games(mut player1: Box<dyn Player>, mut player2: Box<dyn Player>, 
         }
 
         match winner {
-            Some("minimax") => minimax_wins += 1,
-            Some("random") => random_wins += 1,
+            Some(name) if name == player1.get_name() => player1_wins += 1,
+            Some(name) if name == player2.get_name() => player2_wins += 1,
             _ => draws += 1,
         }
     }
 
-    (minimax_wins, random_wins, draws)
+    (player1_wins, player2_wins, draws)
 }
 
 #[test]
