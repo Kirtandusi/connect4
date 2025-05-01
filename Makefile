@@ -1,5 +1,4 @@
-run: 
-	cargo build
+one:
+    cargo clean
+    cargo build
 	cargo run
-test:
-    cargo test

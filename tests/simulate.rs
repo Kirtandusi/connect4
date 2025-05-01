@@ -5,7 +5,6 @@ use connect4::random_player::RandomPlayer;
 use connect4::minimax_player::MinMaxPlayer;
 use connect4::neuralnet_player::NeuralNetPlayer;
 
-/// Simulates `number_of_tests` games and asserts basic stats.
 fn simulate_n_games(mut player1: Box<dyn Player>, mut player2: Box<dyn Player>, number_of_tests: usize) -> (usize, usize, usize) {
     let mut player1_wins = 0;
     let mut player2_wins = 0;

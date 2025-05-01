@@ -1,1 +1,1 @@
-This program uses a neural network to play Connect 4 with the user.
+This program is an interactive game that allows the user to play and simulate games of Connect-4. Implemented is a Random Player, a Minimax Player, and a Neural Network Player. The User can play with these players in the CLI. 
