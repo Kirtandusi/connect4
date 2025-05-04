@@ -1,9 +1,9 @@
-use rand::Rng;
 use crate::game_state::GameState;
+use rand::Rng;
 
 /*
-    helper file used for back propagation.
- */
+   helper file used for back propagation.
+*/
 pub struct Connect4Env {
     game: GameState,
     player: bool,

@@ -182,6 +182,9 @@ impl GameState {
         }
         false
     }
+    /*
+       This is basically a get successors function. Critical for uniformed search
+    */
     pub fn get_valid_moves(&self) -> Vec<usize> {
         (0..7).filter(|&col| !self.check_if_full(col)).collect()
     }

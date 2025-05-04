@@ -1,20 +1,20 @@
 use std::{io, process};
 
+mod connect4_env;
 mod game_state;
-mod player;
-mod random_player;
+mod human_player;
 mod minimax_player;
 mod neuralnet_player;
-mod human_player;
-mod connect4_env;
+mod player;
+mod random_player;
 
+use crate::connect4_env::Connect4Env;
 use game_state::GameState;
-use player::Player;
-use random_player::RandomPlayer;
+use human_player::HumanPlayer;
 use minimax_player::MinMaxPlayer;
 use neuralnet_player::NeuralNetPlayer;
-use human_player::HumanPlayer;
-use crate::connect4_env::Connect4Env;
+use player::Player;
+use random_player::RandomPlayer;
 
 fn main() {
     println!("Welcome to Connect-4!");

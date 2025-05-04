@@ -34,6 +34,6 @@ impl Player for RandomPlayer {
     }
 
     fn get_name(&self) -> &str {
-       "Random Player"
+        "Random Player"
     }
 }

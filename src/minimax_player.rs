@@ -6,7 +6,7 @@ pub struct MinMaxPlayer {
 }
 
 impl MinMaxPlayer {
-    pub fn new( player: bool) -> Self {
+    pub fn new(player: bool) -> Self {
         MinMaxPlayer { player }
     }
     fn evaluate_board(&self, gamestate: &GameState) -> isize {
@@ -33,7 +33,6 @@ impl MinMaxPlayer {
         score
     }
 
-
     fn minimax(
         &self,
         gamestate: &mut GameState,
@@ -45,9 +44,9 @@ impl MinMaxPlayer {
         // Check for terminal states
         if gamestate.check_for_win() {
             return match gamestate.winner {
-                2 => isize::MAX,  // player 2 wins
-                1 => isize::MIN,  // player 1 wins
-                _ => 0,           // draw but should never happen
+                2 => isize::MAX, // player 2 wins
+                1 => isize::MIN, // player 1 wins
+                _ => 0,          // draw but should never happen
             };
         }
 
@@ -63,12 +62,13 @@ impl MinMaxPlayer {
             for &col in &valid_moves {
                 let mut new_state = gamestate.clone();
                 new_state.play_move(col, self.player);
-                
+
                 let score = self.minimax(&mut new_state, depth - 1, alpha, beta, false);
                 max_score = max_score.max(score);
                 alpha = alpha.max(max_score);
-                
-                if alpha >= beta { //pruning
+
+                if alpha >= beta {
+                    //pruning
                     break; // Beta cutoff
                 }
             }
@@ -78,11 +78,11 @@ impl MinMaxPlayer {
             for &col in &valid_moves {
                 let mut new_state = gamestate.clone();
                 new_state.play_move(col, true);
-                
+
                 let score = self.minimax(&mut new_state, depth - 1, alpha, beta, true);
                 min_score = min_score.min(score);
                 beta = beta.min(min_score);
-                
+
                 if beta <= alpha {
                     break; // Alpha cutoff
                 }
@@ -100,9 +100,10 @@ impl MinMaxPlayer {
         for &col in &self.generate_moves(gamestate) {
             let mut new_state = gamestate.clone();
             new_state.play_move(col, false);
-            
+
             let score = self.minimax(&mut new_state, depth - 1, alpha, beta, false);
-            if score > best_score || (score == best_score && col == 3) { // Prefer center column
+            if score > best_score || (score == best_score && col == 3) {
+                // Prefer center column
                 best_score = score;
                 best_move = col;
             }

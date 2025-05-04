@@ -1,20 +1,30 @@
+use crate::connect4_env::Connect4Env;
 use crate::game_state::GameState;
 use crate::player::Player;
 use rand::Rng;
-use crate::connect4_env::Connect4Env;
 pub(crate) struct Neuron {
-    weights: Vec<f64>,   // Weights for each input
-    bias: f64,           // Bias value
+    weights: Vec<f64>,          // Weights for each input
+    bias: f64,                  // Bias value
     activation: fn(f64) -> f64, // Activation function
-    output: f64, //activated output
-    z: f64, //raw input before activation. needed for back propagation.
+    output: f64,                //activated output
+    z: f64,                     //raw input before activation. needed for back propagation.
 }
 impl Neuron {
     pub fn new(weights: Vec<f64>, bias: f64, activation: fn(f64) -> f64) -> Self {
-        Self { weights, bias, activation, output: 0.0, z: 0.0 } //just setting all to zero.
+        Self {
+            weights,
+            bias,
+            activation,
+            output: 0.0,
+            z: 0.0,
+        } //just setting all to zero.
     }
     pub fn relu_activation(x: f64) -> f64 {
-        if x > 0.0 { x } else { 0.0 }
+        if x > 0.0 {
+            x
+        } else {
+            0.0
+        }
     }
 }
 type Layer = Vec<Neuron>; //each layer is a vector of Neurons
@@ -25,7 +35,10 @@ pub struct NeuralNetwork {
 
 impl NeuralNetwork {
     pub fn new(layers: Vec<Layer>, learning_rate: f64) -> Self {
-        Self { layers, learning_rate }
+        Self {
+            layers,
+            learning_rate,
+        }
     }
     pub fn train(&mut self, env: &mut Connect4Env) {
         let mut epsilon = 1.0;
@@ -52,7 +65,10 @@ impl NeuralNetwork {
                 done = is_done;
 
                 let next_q_values = self.forward(&next_state);
-                let max_next_q = next_q_values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                let max_next_q = next_q_values
+                    .iter()
+                    .cloned()
+                    .fold(f64::NEG_INFINITY, f64::max);
                 let mut target_q_values = self.forward(&state);
                 target_q_values[action] = reward + discount_factor * max_next_q;
 
@@ -66,8 +82,12 @@ impl NeuralNetwork {
     calculates mean squared error between target and prediction.
      */
     fn mse_loss(target: &Vec<f64>, prediction: &Vec<f64>) -> f64 {
-        target.iter().zip(prediction.iter()).map(|(x, y)|
-            (x - y).powi(2)).sum::<f64>() / target.len() as f64
+        target
+            .iter()
+            .zip(prediction.iter())
+            .map(|(x, y)| (x - y).powi(2))
+            .sum::<f64>()
+            / target.len() as f64
     }
     /*
     forward pass. Calculates z = w * x + b. applies activation, stores output.
@@ -78,10 +98,13 @@ impl NeuralNetwork {
         for layer in &mut self.layers {
             let mut next_input = vec![];
             for neuron in layer {
-                let z = neuron.weights.iter()
+                let z = neuron
+                    .weights
+                    .iter()
                     .zip(&current_input)
                     .map(|(w, i)| w * i)
-                    .sum::<f64>() + neuron.bias;
+                    .sum::<f64>()
+                    + neuron.bias;
                 neuron.z = z;
                 neuron.output = (neuron.activation)(z);
                 next_input.push(neuron.output);
@@ -118,29 +141,29 @@ impl NeuralNetPlayer {
         //random weights, biases
         let hidden_layer: Layer = (0..hidden_size)
             .map(|_| {
-                let weights: Vec<f64> = (0..input_size).map(|_| rng.random_range(-1.0..1.0)).collect();
+                let weights: Vec<f64> = (0..input_size)
+                    .map(|_| rng.random_range(-1.0..1.0))
+                    .collect();
                 let bias = rng.random_range(-1.0..1.0);
                 Neuron::new(weights, bias, Neuron::relu_activation)
             })
             .collect();
         let output_layer: Layer = (0..output_size)
             .map(|_| {
-                let weights: Vec<f64> = (0..hidden_size).map(|_| rng.random_range(-1.0..1.0)).collect();
+                let weights: Vec<f64> = (0..hidden_size)
+                    .map(|_| rng.random_range(-1.0..1.0))
+                    .collect();
                 let bias = rng.random_range(-1.0..1.0);
                 Neuron::new(weights, bias, Neuron::relu_activation)
             })
             .collect();
-
 
         let network = NeuralNetwork {
             layers: vec![hidden_layer, output_layer],
             learning_rate: 0.1,
         };
 
-        Self {
-            player,
-            network,
-        }
+        Self { player, network }
     }
 }
 //actual player impl.
