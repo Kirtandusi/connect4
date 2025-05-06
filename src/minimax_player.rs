@@ -55,11 +55,11 @@ impl MinMaxPlayer {
             return self.evaluate_board(gamestate);
         }
 
-        let valid_moves = self.generate_moves(gamestate);
+        let valid_moves = &gamestate.get_valid_moves();
 
         if maximizing {
             let mut max_score = isize::MIN;
-            for &col in &valid_moves {
+            for &col in valid_moves {
                 let mut new_state = gamestate.clone();
                 new_state.play_move(col, self.player);
 
@@ -75,7 +75,7 @@ impl MinMaxPlayer {
             max_score
         } else {
             let mut min_score = isize::MAX;
-            for &col in &valid_moves {
+            for &col in valid_moves {
                 let mut new_state = gamestate.clone();
                 new_state.play_move(col, true);
 
@@ -97,7 +97,7 @@ impl MinMaxPlayer {
         let alpha = isize::MIN; //negative infinity
         let beta = isize::MAX; //positive infinity
 
-        for &col in &self.generate_moves(gamestate) {
+        for &col in &gamestate.get_valid_moves() {
             let mut new_state = gamestate.clone();
             new_state.play_move(col, false);
 

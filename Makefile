@@ -1,4 +1,4 @@
-one:
+go:
     cargo clean
     cargo build
-	cargo run
+    cargo run

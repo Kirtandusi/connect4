@@ -17,7 +17,7 @@ impl Neuron {
             activation,
             output: 0.0,
             z: 0.0,
-        } //just setting all to zero.
+        } //just setting all to zero, exception activation
     }
     pub fn relu_activation(x: f64) -> f64 {
         if x > 0.0 {
