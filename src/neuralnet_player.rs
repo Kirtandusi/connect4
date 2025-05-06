@@ -41,23 +41,26 @@ impl NeuralNetwork {
         }
     }
     pub fn train(&mut self, env: &mut Connect4Env) {
-        let mut epsilon = 1.0;
+        let mut epsilon = 1.0; //start epsilon high to encourage exploration
         let epsilon_min = 0.01;
         let epsilon_decay = 0.999;
         let episodes = 30000;
         let learning_rate = 0.1;
         let discount_factor = 0.99;
 
+        //iterate through episodes
         for _ in 0..episodes {
             env.reset();
             let mut done = false;
-            let mut state = env.get_state_vector();
+            let mut state = env.get_state_vector(); //get initial state
 
+            //while not terminal state
             while !done {
-                let action = if rand::random::<f64>() < epsilon {
+                let action = if rand::random::<f64>() < epsilon { //epsilon greedy.
+                    //if < epsilon, choose random action. This encourages exploration.
                     env.sample_random_action()
                 } else {
-                    let q_values = self.forward(&state);
+                    let q_values = self.forward(&state); //use dqn when >= epsilon
                     self.argmax_valid_action(&q_values, &env)
                 };
 
@@ -114,7 +117,7 @@ impl NeuralNetwork {
 
         current_input
     }
-    pub fn back(&mut self, _input: &Vec<f64>, _target: &Vec<f64>) {}
+    pub fn back(&mut self, input: &Vec<f64>, target: &Vec<f64>) {}
 
     fn argmax_valid_action(&self, q_values: &Vec<f64>, env: &Connect4Env) -> usize {
         let valid = env.valid_moves();
@@ -129,7 +132,8 @@ pub struct NeuralNetPlayer {
     pub network: NeuralNetwork,
 }
 
-//deep Q learning implementation.
+//deep Q learning implementation. Values are set to be random instead of 0. Will resolve naturally.
+// learning rate implemented during back prop, not needed during Q learning.
 impl NeuralNetPlayer {
     pub fn new(player: bool) -> Self {
         let input_size = 42; //connect 4 is 7x6
