@@ -1,4 +1,3 @@
-use connect4::connect4_env::Connect4Env;
 use connect4::game_state::GameState;
 use connect4::player::Player;
 use connect4::random_player::RandomPlayer;
@@ -61,10 +60,11 @@ fn test_minimax_vs_random() {
     assert_eq!(minimax_wins + random_wins + draws, num_games);
 }
 
+
 #[test]
 fn test_random_vs_neuralnet() {
     let mut nn = NeuralNetPlayer::new(true);
-    nn.network.train(&mut Connect4Env::new(true));
+    nn.train_generalized(30000);
     let player1 = Box::new(nn) as Box<dyn Player>;
     let player2 = Box::new(RandomPlayer::new(false)) as Box<dyn Player>;
 
@@ -79,4 +79,21 @@ fn test_random_vs_neuralnet() {
     assert!(neuralnet_wins > random_wins, "Expected Neural Net to outperform Random.");
     assert_eq!(neuralnet_wins + random_wins + draws, num_games);
 }
+#[test]
+fn test_minimax_vs_neuralnet() {
+    let mut nn = NeuralNetPlayer::new(true);
+    nn.train_generalized(30000);
+    let player1 = Box::new(nn) as Box<dyn Player>;
+    let player2 = Box::new(MinMaxPlayer::new(false)) as Box<dyn Player>;
+    let num_games = 50;
+    let (neuralnet_wins, minimax_wins, draws) = simulate_n_games(player1, player2, num_games);
+    println!("Simulated {} games:", num_games);
+    println!("Neural Net wins: {}", neuralnet_wins);
+    println!("Minimax wins: {}", minimax_wins);
+    println!("Draws: {}", draws);
+
+    assert!(neuralnet_wins > minimax_wins, "Expected Neural Net to outperform Minimax.");
+    assert_eq!(neuralnet_wins + minimax_wins + draws, num_games);
+}
+
 

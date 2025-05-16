@@ -1,6 +1,5 @@
 use std::{io, process};
 
-mod connect4_env;
 mod game_state;
 mod human_player;
 mod minimax_player;
@@ -8,7 +7,6 @@ mod neuralnet_player;
 mod player;
 mod random_player;
 
-use crate::connect4_env::Connect4Env;
 use game_state::GameState;
 use human_player::HumanPlayer;
 use minimax_player::MinMaxPlayer;
@@ -96,8 +94,8 @@ fn input() {
 }
 
 fn train_neural_net(side: bool) -> NeuralNetPlayer {
-    let mut env = Connect4Env::new(side);
     let mut ai_player = NeuralNetPlayer::new(side);
-    ai_player.network.train(&mut env);
+    ai_player.train_generalized(30000);
     ai_player
 }
+

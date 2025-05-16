@@ -1,8 +1,8 @@
-use crate::connect4_env::Connect4Env;
+use rand::prelude::IndexedRandom;
 use crate::game_state::GameState;
 use crate::player::Player;
 use rand::Rng;
-pub(crate) struct Neuron {
+pub struct Neuron {
     weights: Vec<f64>,          // Weights for each input
     bias: f64,                  // Bias value
     activation: fn(f64) -> f64, // Activation function
@@ -26,6 +26,13 @@ impl Neuron {
             0.0
         }
     }
+    pub fn relu_derivative(x: f64) -> f64 {
+        if x > 0.0 {
+            1.0
+        } else {
+            0.0
+        }
+    }
 }
 type Layer = Vec<Neuron>; //each layer is a vector of Neurons
 pub struct NeuralNetwork {
@@ -40,50 +47,12 @@ impl NeuralNetwork {
             learning_rate,
         }
     }
-    pub fn train(&mut self, env: &mut Connect4Env) {
-        let mut epsilon = 1.0; //start epsilon high to encourage exploration
-        let epsilon_min = 0.01;
-        let epsilon_decay = 0.999;
-        let episodes = 30000;
-        let learning_rate = 0.1;
-        let discount_factor = 0.99;
 
-        //iterate through episodes
-        for _ in 0..episodes {
-            env.reset();
-            let mut done = false;
-            let mut state = env.get_state_vector(); //get initial state
 
-            //while not terminal state
-            while !done {
-                let action = if rand::random::<f64>() < epsilon { //epsilon greedy.
-                    //if < epsilon, choose random action. This encourages exploration.
-                    env.sample_random_action()
-                } else {
-                    let q_values = self.forward(&state); //use dqn when >= epsilon
-                    self.argmax_valid_action(&q_values, &env)
-                };
-
-                let (next_state, reward, is_done) = env.step(action);
-                done = is_done;
-
-                let next_q_values = self.forward(&next_state);
-                let max_next_q = next_q_values
-                    .iter()
-                    .cloned()
-                    .fold(f64::NEG_INFINITY, f64::max);
-                let mut target_q_values = self.forward(&state);
-                target_q_values[action] = reward + discount_factor * max_next_q;
-
-                self.back(&state, &target_q_values);
-                state = next_state;
-            }
-            epsilon = epsilon.min(epsilon * epsilon_decay).max(epsilon_min);
-        }
-    }
     /*
     calculates mean squared error between target and prediction.
      */
+    #[allow(dead_code)]
     fn mse_loss(target: &Vec<f64>, prediction: &Vec<f64>) -> f64 {
         target
             .iter()
@@ -117,15 +86,64 @@ impl NeuralNetwork {
 
         current_input
     }
-    pub fn back(&mut self, input: &Vec<f64>, target: &Vec<f64>) {}
+    pub fn back(&mut self, input: &Vec<f64>, target: &Vec<f64>) {
 
-    fn argmax_valid_action(&self, q_values: &Vec<f64>, env: &Connect4Env) -> usize {
-        let valid = env.valid_moves();
-        *valid
-            .iter()
-            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
-            .unwrap()
+        let mut deltas: Vec<Vec<f64>> = Vec::new();
+
+        //first step is to compute deltas for output layer.
+        let output_layer = self.layers.last().unwrap();
+        let mut output_deltas = vec![];
+        //forward called first, every neuron has a z value.
+        for (i, neuron) in output_layer.iter().enumerate() {
+            let error = neuron.output - target[i];
+            let delta = error * Neuron::relu_derivative(neuron.z);
+            output_deltas.push(delta);
+        }
+        deltas.push(output_deltas);
+
+        //then compute deltas for hidden layers (back prop)
+        for l in (0..self.layers.len() - 1).rev() {
+            let layer = &self.layers[l];
+            let next_layer = &self.layers[l + 1];
+            let next_deltas = &deltas[0]; // most recent delta is first in list
+            let mut layer_deltas = vec![];
+
+            for (i, neuron) in layer.iter().enumerate() {
+                // Weighted sum of deltas from next layer
+                let mut sum = 0.0;
+                for (j, next_neuron) in next_layer.iter().enumerate() {
+                    sum += next_neuron.weights[i] * next_deltas[j];
+                }
+                let delta = sum * Neuron::relu_derivative(neuron.z);
+                layer_deltas.push(delta);
+            }
+            deltas.insert(0, layer_deltas); // prepend
+        }
+
+        //update biases, weights
+        let mut prev_output = input.clone();
+        for (layer_index, layer) in self.layers.iter_mut().enumerate() {
+            for (neuron_index, neuron) in layer.iter_mut().enumerate() {
+                let delta = deltas[layer_index][neuron_index];
+                // Update weights
+                for w in 0..neuron.weights.len() {
+                    neuron.weights[w] -= self.learning_rate * delta * prev_output[w];
+                }
+                // Update bias
+                neuron.bias -= self.learning_rate * delta;
+            }
+            // Update prev_output to current layer's output for next layer
+            prev_output = layer.iter().map(|n| n.output).collect();
+        }
     }
+
+    // fn argmax_valid_action(&self, q_values: &Vec<f64>, state: &GameState) -> usize {
+    //     let valid = state.get_valid_moves();
+    //     *valid
+    //         .iter()
+    //         .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
+    //         .unwrap()
+    // }
 }
 pub struct NeuralNetPlayer {
     player: bool,
@@ -162,12 +180,77 @@ impl NeuralNetPlayer {
             })
             .collect();
 
-        let network = NeuralNetwork {
-            layers: vec![hidden_layer, output_layer],
-            learning_rate: 0.1,
-        };
+        let network = NeuralNetwork::new(vec![hidden_layer, output_layer], 0.1);
 
         Self { player, network }
+    }
+    /*
+        using self play, the neural net will train itself.
+     */
+    pub fn train_generalized(&mut self, episodes: usize) {
+        let mut rng = rand::rng();
+        let discount = 0.99;
+        let mut epsilon = 1.0;
+        let epsilon_min = 0.01;
+        let epsilon_decay = 0.999;
+
+        for episode in 0..episodes {
+            let mut game = GameState::new();
+            let mut current_player = true;
+
+            while game.is_not_full() {
+                let state = game.to_input_vector();
+                let valid_moves = game.get_valid_moves();
+
+                // Decide move (explore or exploit)
+                let action = if rng.random::<f64>() < epsilon {
+                    *valid_moves.choose(&mut rng).unwrap()
+                } else {
+                    let q_values = self.network.forward(&state);
+                    *valid_moves
+                        .iter()
+                        .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
+                        .unwrap()
+                };
+
+                game.play_move(action, current_player);
+                let won = game.check_for_win();
+                let reward = if won {
+                    if current_player == self.player { 1.0 } else { -1.0 }
+                } else {
+                    0.0
+                };
+
+                // Compute Q target
+                let next_state = game.to_input_vector();
+                let next_q = self.network.forward(&next_state);
+                let max_next_q = *next_q
+                    .iter()
+                    .max_by(|a, b| a.partial_cmp(b).unwrap())
+                    .unwrap();
+
+                let mut target_q = self.network.forward(&state);
+                if won {
+                    target_q[action] = reward;
+                } else {
+                    target_q[action] = reward + discount * max_next_q;
+                }
+
+                self.network.back(&state, &target_q);
+
+                if won {
+                    break;
+                }
+
+                current_player = !current_player;
+            }
+
+            epsilon = (epsilon * epsilon_decay).max(epsilon_min);
+
+            if episode % 1000 == 0 {
+                println!("Episode {} done. Epsilon = {:.3}", episode, epsilon);
+            }
+        }
     }
 }
 //actual player impl.
