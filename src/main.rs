@@ -1,5 +1,4 @@
 use std::{io, process};
-
 mod game_state;
 mod human_player;
 mod minimax_player;
@@ -94,8 +93,41 @@ fn input() {
 }
 
 fn train_neural_net(side: bool) -> NeuralNetPlayer {
+    // let path = "trained_network.json";
+    // if !retrain && Path::new(path).exists() {
+    //     println!("Loading trained network from disk...");
+    //    // let network = load_network(path);
+    //     return NeuralNetPlayer { player: side, network };
+    // }
+
+   // println!("No saved network found. Training from scratch...");
     let mut ai_player = NeuralNetPlayer::new(side);
     ai_player.train_generalized(30000);
+   // save_network(&ai_player.network, path);
     ai_player
 }
+
+// fn save_network(network: &NeuralNetwork, path: &str) {
+//     let file = File::create(path).expect("Failed to create file");
+//     let writer = BufWriter::new(file);
+//     serde_json::to_writer(writer, network).expect("Failed to write network to file");
+// }
+//
+// fn load_network(path: &str) -> NeuralNetwork {
+//     let file = File::open(path).expect("Failed to open file");
+//     let reader = BufReader::new(file);
+//     let mut network: NeuralNetwork = serde_json::from_reader(reader).expect("Failed to read network");
+//
+//     // Reattach activation functions (ReLU)
+//     for layer in &mut network.layers {
+//         for neuron in layer {
+//             neuron.activation = Neuron::relu_activation;
+//         }
+//     }
+//
+//     network
+// }
+
+
+
 

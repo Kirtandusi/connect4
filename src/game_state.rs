@@ -28,6 +28,7 @@ impl GameState {
         }
         false
     }
+    #[allow(dead_code)]
     pub fn get_last_move(&self) -> Option<usize> {
         self.last_move
     }
