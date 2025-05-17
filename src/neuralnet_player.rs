@@ -340,45 +340,6 @@ impl NeuralNetPlayer {
 
         println!("Training complete!");
     }
-    #[allow(dead_code)]
-    pub fn evaluate(&mut self, num_games: usize) -> (usize, usize, usize) {
-        let mut wins = 0;
-        let mut losses = 0;
-        let mut draws = 0;
-
-        // Create a MinMaxPlayer as opponent
-        let mut opponent = MinMaxPlayer::new(!self.player);
-
-        for _ in 0..num_games {
-            let mut game = GameState::new();
-            let mut current_player = true; // Player 1 starts
-
-            while game.is_not_full() {
-                if current_player == self.player {
-                    self.make_move(&mut game);
-                } else {
-                    opponent.make_move(&mut game);
-                }
-
-                if game.check_for_win() {
-                    if current_player == self.player {
-                        wins += 1;
-                    } else {
-                        losses += 1;
-                    }
-                    break;
-                }
-
-                current_player = !current_player;
-            }
-
-            if !game.is_not_full() && !game.check_for_win() {
-                draws += 1;
-            }
-        }
-
-        (wins, losses, draws)
-    }
 }
 impl Player for NeuralNetPlayer {
     fn make_move(&mut self, game_state: &mut GameState) {
