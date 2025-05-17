@@ -2,6 +2,10 @@ use rand::prelude::IndexedRandom;
 use crate::game_state::GameState;
 use crate::player::Player;
 use rand::Rng;
+use crate::minimax_player::MinMaxPlayer;
+use crate::random_player::RandomPlayer;
+use serde::{Serialize, Deserialize}; //to save training data
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Neuron {
     weights: Vec<f64>,          // Weights for each input
     bias: f64,                  // Bias value
@@ -35,6 +39,8 @@ impl Neuron {
     }
 }
 type Layer = Vec<Neuron>; //each layer is a vector of Neurons
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct NeuralNetwork {
     layers: Vec<Layer>,
     learning_rate: f64,
@@ -192,42 +198,66 @@ impl NeuralNetPlayer {
         let discount = 0.99;
         let mut epsilon = 1.0;
         let epsilon_min = 0.01;
-        let epsilon_decay = 0.999;
+        let epsilon_decay = 0.995;
 
         for episode in 0..episodes {
             let mut game = GameState::new();
             let mut current_player = true;
 
+            // Choose opponent, 50% random, 30% self-play, 20% Minimax
+            let roll: f64 = rng.random(); // between 0.0 and 1.0
+            let mut opponent: Box<dyn Player> = if roll < 0.5 {
+                Box::new(RandomPlayer::new(!self.player))
+            } else if roll < 0.8 {
+                // Self-play with a clone of the current network
+                let cloned_net = NeuralNetwork {
+                    layers: self.network.layers.clone(), // requires Clone on Layer, Neuron
+                    learning_rate: self.network.learning_rate,
+                };
+                Box::new(NeuralNetPlayer {
+                    player: !self.player,
+                    network: cloned_net,
+                })
+            } else {
+                Box::new(MinMaxPlayer::new(!self.player))
+            };
+
             while game.is_not_full() {
                 let state = game.to_input_vector();
                 let valid_moves = game.get_valid_moves();
 
-                // Decide move (explore or exploit)
-                let action = if rng.random::<f64>() < epsilon {
-                    *valid_moves.choose(&mut rng).unwrap()
+                let action = if current_player == self.player {
+                    // Decide move (explore or exploit)
+                    if rng.random::<f64>() < epsilon {
+                        *valid_moves.choose(&mut rng).unwrap()
+                    } else {
+                        let q_values = self.network.forward(&state);
+                        *valid_moves
+                            .iter()
+                            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
+                            .unwrap()
+                    }
                 } else {
-                    let q_values = self.network.forward(&state);
-                    *valid_moves
-                        .iter()
-                        .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
-                        .unwrap()
+                    let _prev = game.clone();
+                    opponent.make_move(&mut game);
+                    let _opp_action = game.get_last_move().unwrap(); // assumes this method exists
+                    current_player = !current_player;
+                    continue;
                 };
 
                 game.play_move(action, current_player);
                 let won = game.check_for_win();
                 let reward = if won {
                     if current_player == self.player { 1.0 } else { -1.0 }
+                } else if !game.is_not_full() {
+                    0.5
                 } else {
                     0.0
                 };
 
-                // Compute Q target
                 let next_state = game.to_input_vector();
                 let next_q = self.network.forward(&next_state);
-                let max_next_q = *next_q
-                    .iter()
-                    .max_by(|a, b| a.partial_cmp(b).unwrap())
-                    .unwrap();
+                let max_next_q = *next_q.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
 
                 let mut target_q = self.network.forward(&state);
                 if won {
@@ -252,6 +282,7 @@ impl NeuralNetPlayer {
             }
         }
     }
+
 }
 //actual player impl.
 impl Player for NeuralNetPlayer {
