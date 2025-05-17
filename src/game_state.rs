@@ -2,6 +2,7 @@ pub struct GameState {
     pub board: Vec<Vec<usize>>,
     pub exclude: Vec<usize>,
     pub winner: usize,
+    pub last_move: Option<usize>,
 }
 impl GameState {
     // Create a new game state with an empty board
@@ -10,6 +11,7 @@ impl GameState {
             board: vec![vec![0; 7]; 6],
             exclude: Vec::new(),
             winner: 0,
+            last_move: None,
         }
     }
     pub fn check_if_full(&self, column: usize) -> bool {
@@ -25,6 +27,9 @@ impl GameState {
             }
         }
         false
+    }
+    pub fn get_last_move(&self) -> Option<usize> {
+        self.last_move
     }
     pub fn to_input_vector(&self) -> Vec<f64> {
         let mut input = Vec::with_capacity(42);
@@ -53,6 +58,7 @@ impl GameState {
     takes mutable reference because it must change the gamestate.
      */
     pub fn play_move(&mut self, column: usize, side: bool) {
+        self.last_move = Some(column);
         let top_of_column = self.top(column);
         if top_of_column == 6 {
             println!("Column is full, please choose another column");
@@ -195,6 +201,7 @@ impl Clone for GameState {
             board: self.board.clone(),
             exclude: self.exclude.clone(),
             winner: self.winner.clone(),
+            last_move: self.last_move.clone(),
         }
     }
 }

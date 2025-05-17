@@ -64,7 +64,7 @@ fn test_minimax_vs_random() {
 #[test]
 fn test_random_vs_neuralnet() {
     let mut nn = NeuralNetPlayer::new(true);
-    nn.train_generalized(30000);
+    nn.train_generalized(100000);
     let player1 = Box::new(nn) as Box<dyn Player>;
     let player2 = Box::new(RandomPlayer::new(false)) as Box<dyn Player>;
 
