@@ -10,15 +10,18 @@ pub struct Neuron {
     weights: Vec<f64>,          // Weights for each input
     bias: f64,                  // Bias value
     pub(crate) activation: fn(f64) -> f64, // Activation function
+    pub(crate) activation_derivative: fn(f64) -> f64,
     output: f64,                //activated output
     z: f64,                     //raw input before activation. needed for back propagation.
+
 }
 impl Neuron {
-    pub fn new(weights: Vec<f64>, bias: f64, activation: fn(f64) -> f64) -> Self {
+    pub fn new(weights: Vec<f64>, bias: f64, activation: fn(f64) -> f64, derivative: fn(f64) -> f64) -> Self {
         Self {
             weights,
             bias,
             activation,
+            activation_derivative: derivative,
             output: 0.0,
             z: 0.0,
         } //just setting all to zero, exception activation
@@ -37,6 +40,9 @@ impl Neuron {
             0.0
         }
     }
+    fn identity(x: f64) -> f64 { x }
+    fn identity_derivative(_: f64) -> f64 { 1.0 }
+
 }
 type Layer = Vec<Neuron>; //each layer is a vector of Neurons
 
@@ -102,7 +108,7 @@ impl NeuralNetwork {
         //forward called first, every neuron has a z value.
         for (i, neuron) in output_layer.iter().enumerate() {
             let error = neuron.output - target[i];
-            let delta = error * Neuron::relu_derivative(neuron.z);
+            let delta = error * (neuron.activation_derivative)(neuron.z);
             output_deltas.push(delta);
         }
         deltas.push(output_deltas);
@@ -120,7 +126,7 @@ impl NeuralNetwork {
                 for (j, next_neuron) in next_layer.iter().enumerate() {
                     sum += next_neuron.weights[i] * next_deltas[j];
                 }
-                let delta = sum * Neuron::relu_derivative(neuron.z);
+                let delta = sum * (neuron.activation_derivative)(neuron.z);
                 layer_deltas.push(delta);
             }
             deltas.insert(0, layer_deltas); // prepend
@@ -165,7 +171,7 @@ impl NeuralNetPlayer {
                     .map(|_| rng.random_range(-0.5..0.5)) // Fixed: was random_range
                     .collect();
                 let bias = rng.random_range(-0.5..0.5); // Fixed: was random_range
-                Neuron::new(weights, bias, Neuron::relu_activation)
+                Neuron::new(weights, bias, Neuron::relu_activation, Neuron::relu_derivative)
             })
             .collect();
 
@@ -176,7 +182,7 @@ impl NeuralNetPlayer {
                     .map(|_| rng.random_range(-0.5..0.5))
                     .collect();
                 let bias = rng.random_range(-0.5..0.5);
-                Neuron::new(weights, bias, Neuron::relu_activation)
+                Neuron::new(weights, bias, Neuron::identity, Neuron::identity_derivative)
             })
             .collect();
 
@@ -186,11 +192,11 @@ impl NeuralNetPlayer {
                     .map(|_| rng.random_range(-0.5..0.5)) // Fixed: was random_range
                     .collect();
                 let bias = rng.random_range(-0.5..0.5); // Fixed: was random_range
-                Neuron::new(weights, bias, Neuron::relu_activation)
+                Neuron::new(weights, bias, Neuron::identity, Neuron::identity_derivative)
             })
             .collect();
 
-        let network = NeuralNetwork::new(vec![hidden_layer, hidden_layer2, output_layer], 0.01);
+        let network = NeuralNetwork::new(vec![hidden_layer, hidden_layer2, output_layer], 0.001);
 
         Self { player, network }
     }
@@ -201,7 +207,7 @@ impl NeuralNetPlayer {
         let mut rng = rand::rng();
         let discount: f32 = 0.95; // Slightly reduced discount factor
         let mut epsilon = 1.0;
-        let epsilon_min = 0.1; // Increased minimum exploration rate
+        let epsilon_min = 0.01; // Increased minimum exploration rate
         let epsilon_decay = 0.9995; // Slower decay
 
         println!("Starting training for {} episodes...", episodes);
@@ -216,9 +222,9 @@ impl NeuralNetPlayer {
 
             // Choose opponent: 50% random, 30% self-play, 20% Minimax
             let roll: f64 = rng.random();
-            let mut opponent: Box<dyn Player> = if roll < 0.5 {
+            let mut opponent: Box<dyn Player> = if roll < 0.40 {
                 Box::new(RandomPlayer::new(!self.player))
-            } else if roll < 0.8 {
+            } else if roll < 0.7 {
                 // Self-play with a clone of the current network
                 let cloned_net = NeuralNetwork {
                     layers: self.network.layers.clone(),
@@ -242,7 +248,6 @@ impl NeuralNetPlayer {
                     // AI's turn
                     let state = game.to_input_vector();
                     let valid_moves = game.get_valid_moves();
-
                     if valid_moves.is_empty() {
                         break; // No valid moves available
                     }
@@ -302,25 +307,41 @@ impl NeuralNetPlayer {
             } else if opponent_won {
                 -1.0 // Loss
             } else {
-                0.1 // Draw or unfinished (slight positive reward to encourage longer games)
+                0.0 // Draw or unfinished (slight positive reward to encourage longer games)
             };
 
             // FIXED: Temporal difference learning implementation
             // Backward pass for each state-action pair with proper reward propagation
-            for (i, (state, action)) in game_history.iter().enumerate() {
-                // Calculate target Q-value with temporal difference - reward diminishes with distance from outcome
-                let discounted_future_reward = reward * discount.powi((game_history.len() - i) as i32);
+            for i in 0..game_history.len() {
+                let (ref state, action) = game_history[i];
+                let reward_for_this_step = if i == game_history.len() - 1 {
+                    reward // terminal reward
+                } else {
+                    0.0 // intermediate moves get 0 reward unless you implement shaping
+                };
 
-                // Get current Q-values
-                let mut target_q = self.network.forward(state);
+                // next state (or 0 if terminal)
+                let next_q_max = if i + 1 < game_history.len() {
+                    let (next_state, _) = &game_history[i + 1];
+                    let q_next = self.network.forward(next_state);
+                    if q_next.is_empty() {
+                        0.0
+                    } else {
+                        *q_next.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+                    }
 
-                // FIXED: Only update the Q-value for the chosen action
-                // This implements the Q-learning update rule: Q(s,a) = r + γ·max_a'(Q(s',a'))
-                target_q[*action] = discounted_future_reward as f64;
+                } else {
+                    0.0
+                };
 
-                // Train network
-                self.network.back(state, &target_q);
+                let target = reward_for_this_step as f64 + (discount as f64) * next_q_max;
+
+                let mut q_values = self.network.forward(state);
+                q_values[action] = target;
+
+                self.network.back(state, &q_values);
             }
+
 
             // Decay epsilon
             epsilon = (epsilon * epsilon_decay).max(epsilon_min);
@@ -351,10 +372,20 @@ impl Player for NeuralNetPlayer {
             println!("No valid moves found");
             return;
         }
-        let best_action = *valid_moves
-            .iter()
-            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap())
-            .unwrap();
+        let best_action = match valid_moves.iter().max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap()) {
+            Some(a) => *a,
+            None => {
+                println!("Panic prevented: valid_moves unexpectedly empty. Skipping move.");
+                return;
+            }
+        };
+
+
+
+        if !game_state.get_valid_moves().contains(&best_action) {
+            println!("Training: selected full column {}! Skipping turn.", best_action);
+            return;
+        }
 
         game_state.play_move(best_action, self.player);
     }
