@@ -3,152 +3,10 @@ use crate::game_state::GameState;
 use crate::player::Player;
 use rand::Rng;
 use crate::minimax_player::MinMaxPlayer;
+use crate::neuralnetwork::neural_network::{Layer, NeuralNetwork};
+use crate::neuralnetwork::neuron::Neuron;
 use crate::random_player::RandomPlayer;
 
-#[derive(Clone)]
-pub struct Neuron {
-    weights: Vec<f64>,          // Weights for each input
-    bias: f64,                  // Bias value
-    pub(crate) activation: fn(f64) -> f64, // Activation function
-    pub(crate) activation_derivative: fn(f64) -> f64,
-    output: f64,                //activated output
-    z: f64,                     //raw input before activation. needed for back propagation.
-
-}
-impl Neuron {
-    pub fn new(weights: Vec<f64>, bias: f64, activation: fn(f64) -> f64, derivative: fn(f64) -> f64) -> Self {
-        Self {
-            weights,
-            bias,
-            activation,
-            activation_derivative: derivative,
-            output: 0.0,
-            z: 0.0,
-        } //just setting all to zero, exception activation
-    }
-    pub fn relu_activation(x: f64) -> f64 {
-        if x > 0.0 {
-            x
-        } else {
-            0.0
-        }
-    }
-    pub fn relu_derivative(x: f64) -> f64 {
-        if x > 0.0 {
-            1.0
-        } else {
-            0.0
-        }
-    }
-    fn identity(x: f64) -> f64 { x }
-    fn identity_derivative(_: f64) -> f64 { 1.0 }
-
-}
-type Layer = Vec<Neuron>; //each layer is a vector of Neurons
-
-#[derive(Clone)]
-pub struct NeuralNetwork {
-    pub(crate) layers: Vec<Layer>,
-    learning_rate: f64,
-}
-
-impl NeuralNetwork {
-    pub fn new(layers: Vec<Layer>, learning_rate: f64) -> Self {
-        Self {
-            layers,
-            learning_rate,
-        }
-    }
-
-
-    /*
-    calculates mean squared error between target and prediction. needed for debugging.
-     */
-    #[allow(dead_code)]
-    fn mse_loss(target: &Vec<f64>, prediction: &Vec<f64>) -> f64 {
-        target
-            .iter()
-            .zip(prediction.iter())
-            .map(|(x, y)| (x - y).powi(2))
-            .sum::<f64>()
-            / target.len() as f64
-    }
-    /*
-    forward pass. Calculates z = w * x + b. applies activation, stores output.
-     */
-    pub fn forward(&mut self, input: &Vec<f64>) -> Vec<f64> {
-        let mut current_input = input.clone();
-
-        for layer in &mut self.layers {
-            let mut next_input = vec![];
-            for neuron in layer {
-                let z = neuron
-                    .weights
-                    .iter()
-                    .zip(&current_input)
-                    .map(|(w, i)| w * i)
-                    .sum::<f64>()
-                    + neuron.bias;
-                neuron.z = z;
-                neuron.output = (neuron.activation)(z);
-                next_input.push(neuron.output);
-            }
-            current_input = next_input;
-        }
-
-        current_input
-    }
-    pub fn back(&mut self, input: &Vec<f64>, target: &Vec<f64>) {
-
-        let mut deltas: Vec<Vec<f64>> = Vec::new();
-
-        //first step is to compute deltas for output layer.
-        let output_layer = self.layers.last().unwrap();
-        let mut output_deltas = vec![];
-        //forward called first, every neuron has a z value.
-        for (i, neuron) in output_layer.iter().enumerate() {
-            let error = neuron.output - target[i];
-            let delta = error * (neuron.activation_derivative)(neuron.z);
-            output_deltas.push(delta);
-        }
-        deltas.push(output_deltas);
-
-        //then compute deltas for hidden layers (back prop)
-        for l in (0..self.layers.len() - 1).rev() {
-            let layer = &self.layers[l];
-            let next_layer = &self.layers[l + 1];
-            let next_deltas = &deltas[0]; // most recent delta is first in list
-            let mut layer_deltas = vec![];
-
-            for (i, neuron) in layer.iter().enumerate() {
-                // Weighted sum of deltas from next layer
-                let mut sum = 0.0;
-                for (j, next_neuron) in next_layer.iter().enumerate() {
-                    sum += next_neuron.weights[i] * next_deltas[j];
-                }
-                let delta = sum * (neuron.activation_derivative)(neuron.z);
-                layer_deltas.push(delta);
-            }
-            deltas.insert(0, layer_deltas); // prepend
-        }
-
-        //update biases, weights
-        let mut prev_output = input.clone();
-        for (layer_index, layer) in self.layers.iter_mut().enumerate() {
-            for (neuron_index, neuron) in layer.iter_mut().enumerate() {
-                let delta = deltas[layer_index][neuron_index];
-                // Update weights
-                for w in 0..neuron.weights.len() {
-                    neuron.weights[w] -= self.learning_rate * delta * prev_output[w];
-                }
-                // Update bias
-                neuron.bias -= self.learning_rate * delta;
-            }
-            // Update prev_output to current layer's output for next layer
-            prev_output = layer.iter().map(|n| n.output).collect();
-        }
-    }
-}
 pub struct NeuralNetPlayer {
     pub(crate) player: bool,
     pub network: NeuralNetwork,
@@ -222,9 +80,9 @@ impl NeuralNetPlayer {
 
             // Choose opponent: 50% random, 30% self-play, 20% Minimax
             let roll: f64 = rng.random();
-            let mut opponent: Box<dyn Player> = if roll < 0.40 {
+            let mut opponent: Box<dyn Player> = if roll < 0.33 {
                 Box::new(RandomPlayer::new(!self.player))
-            } else if roll < 0.7 {
+            } else if roll < 0.66 {
                 // Self-play with a clone of the current network
                 let cloned_net = NeuralNetwork {
                     layers: self.network.layers.clone(),
@@ -337,6 +195,7 @@ impl NeuralNetPlayer {
                 let target = reward_for_this_step as f64 + (discount as f64) * next_q_max;
 
                 let mut q_values = self.network.forward(state);
+
                 q_values[action] = target;
 
                 self.network.back(state, &q_values);

@@ -1,15 +1,15 @@
 use std::{io, process};
+use crate::neuralnetwork::NeuralNetPlayer;
 mod game_state;
 mod human_player;
 mod minimax_player;
-mod neuralnet_player;
+mod neuralnetwork;
 mod player;
 mod random_player;
 
 use game_state::GameState;
 use human_player::HumanPlayer;
 use minimax_player::MinMaxPlayer;
-use neuralnet_player::NeuralNetPlayer;
 use player::Player;
 use random_player::RandomPlayer;
 
