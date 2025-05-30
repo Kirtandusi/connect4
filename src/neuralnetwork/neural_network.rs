@@ -15,8 +15,6 @@ impl NeuralNetwork {
             learning_rate,
         }
     }
-
-
     /*
     calculates mean squared error between target and prediction. needed for debugging.
      */

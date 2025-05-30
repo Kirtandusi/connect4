@@ -29,7 +29,7 @@ impl NeuralNetPlayer {
                     .map(|_| rng.random_range(-0.5..0.5)) // Fixed: was random_range
                     .collect();
                 let bias = rng.random_range(-0.5..0.5); // Fixed: was random_range
-                Neuron::new(weights, bias, Neuron::relu_activation, Neuron::relu_derivative)
+                Neuron::new(weights, bias, Neuron::leaky_relu_activation, Neuron::leaky_relu_derivative)
             })
             .collect();
 
@@ -109,7 +109,6 @@ impl NeuralNetPlayer {
                     if valid_moves.is_empty() {
                         break; // No valid moves available
                     }
-
                     // Decide move (explore or exploit)
                     let action = if rng.random::<f64>() < epsilon {
                         // Exploration: choose random valid move
@@ -118,11 +117,9 @@ impl NeuralNetPlayer {
                         // Exploitation: choose best move according to Q-values
                         let q_values = self.network.forward(&state);
 
-                        // FIXED: Better handling of valid move selection
+                        //apply a mask to get rid of values in full columns.
                         let best_action = valid_moves.iter()
-                            .max_by(|&&a, &&b| {
-                                q_values[a].partial_cmp(&q_values[b]).unwrap_or(std::cmp::Ordering::Equal)
-                            })
+                            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap_or(std::cmp::Ordering::Equal))
                             .unwrap_or(&0);
                         *best_action
                     };
@@ -168,8 +165,6 @@ impl NeuralNetPlayer {
                 0.0 // Draw or unfinished (slight positive reward to encourage longer games)
             };
 
-            // FIXED: Temporal difference learning implementation
-            // Backward pass for each state-action pair with proper reward propagation
             for i in 0..game_history.len() {
                 let (ref state, action) = game_history[i];
                 let reward_for_this_step = if i == game_history.len() - 1 {
@@ -184,10 +179,9 @@ impl NeuralNetPlayer {
                     let q_next = self.network.forward(next_state);
                     if q_next.is_empty() {
                         0.0
-                    } else {
+                    } else { //q values are not being updated, as last value is always picked.
                         *q_next.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
                     }
-
                 } else {
                     0.0
                 };
@@ -231,10 +225,11 @@ impl Player for NeuralNetPlayer {
             println!("No valid moves found");
             return;
         }
-        let best_action = match valid_moves.iter().max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap()) {
+        let best_action = match valid_moves.iter()
+            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap()) {
             Some(a) => *a,
             None => {
-                println!("Panic prevented: valid_moves unexpectedly empty. Skipping move.");
+                println!("valid moves empty");
                 return;
             }
         };

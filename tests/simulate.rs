@@ -2,7 +2,7 @@ use connect4::game_state::GameState;
 use connect4::player::Player;
 use connect4::random_player::RandomPlayer;
 use connect4::minimax_player::MinMaxPlayer;
-use connect4::neuralnet_player::NeuralNetPlayer;
+use connect4::neuralnetwork::NeuralNetPlayer;
 
 fn simulate_n_games(mut player1: Box<dyn Player>, mut player2: Box<dyn Player>, number_of_tests: usize) -> (usize, usize, usize) {
     let mut player1_wins = 0;

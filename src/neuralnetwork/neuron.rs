@@ -19,18 +19,18 @@ impl Neuron {
             z: 0.0,
         } //just setting all to zero, exception activation
     }
-    pub fn relu_activation(x: f64) -> f64 {
+    pub fn leaky_relu_activation(x: f64) -> f64 {
         if x > 0.0 {
             x
         } else {
-            0.0
+            0.01 * x
         }
     }
-    pub fn relu_derivative(x: f64) -> f64 {
+    pub fn leaky_relu_derivative(x: f64) -> f64 {
         if x > 0.0 {
             1.0
         } else {
-            0.0
+            0.01
         }
     }
     pub(crate) fn identity(x: f64) -> f64 { x }
