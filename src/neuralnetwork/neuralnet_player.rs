@@ -26,14 +26,14 @@ impl NeuralNetPlayer {
         let hidden_layer: Layer = (0..hidden_size)
             .map(|_| {
                 let weights: Vec<f64> = (0..input_size)
-                    .map(|_| rng.random_range(-0.5..0.5)) // Fixed: was random_range
+                    .map(|_| rng.random_range(-0.5..0.5))
                     .collect();
-                let bias = rng.random_range(-0.5..0.5); // Fixed: was random_range
+                let bias = rng.random_range(-0.5..0.5);
                 Neuron::new(weights, bias, Neuron::leaky_relu_activation, Neuron::leaky_relu_derivative)
             })
             .collect();
 
-        // Add a second hidden layer for better performance
+        // SECOND hidden layer, same as first but uses different activation fn to stop gradient issues
         let hidden_layer2: Layer = (0..hidden_size)
             .map(|_| {
                 let weights: Vec<f64> = (0..hidden_size)
@@ -47,9 +47,9 @@ impl NeuralNetPlayer {
         let output_layer: Layer = (0..output_size)
             .map(|_| {
                 let weights: Vec<f64> = (0..hidden_size) // Connect to second hidden layer
-                    .map(|_| rng.random_range(-0.5..0.5)) // Fixed: was random_range
+                    .map(|_| rng.random_range(-0.5..0.5))
                     .collect();
-                let bias = rng.random_range(-0.5..0.5); // Fixed: was random_range
+                let bias = rng.random_range(-0.5..0.5);
                 Neuron::new(weights, bias, Neuron::identity, Neuron::identity_derivative)
             })
             .collect();
@@ -78,7 +78,7 @@ impl NeuralNetPlayer {
             let mut game = GameState::new();
             let mut current_player = true;
 
-            // Choose opponent: 50% random, 30% self-play, 20% Minimax
+            // Choose opponent: 50% random, 30% self-play, 20% Minimax //CHANGE THESE VALUES?
             let roll: f64 = rng.random();
             let mut opponent: Box<dyn Player> = if roll < 0.33 {
                 Box::new(RandomPlayer::new(!self.player))
@@ -96,7 +96,7 @@ impl NeuralNetPlayer {
                 Box::new(MinMaxPlayer::new(!self.player))
             };
 
-            // FIXED: Added state-action-reward history tracking
+            //state action reward tracking
             let mut game_history: Vec<(Vec<f64>, usize)> = Vec::new(); // State, action pairs
             let mut player_won = false;
             let mut opponent_won = false;
@@ -109,25 +109,32 @@ impl NeuralNetPlayer {
                     if valid_moves.is_empty() {
                         break; // No valid moves available
                     }
-                    // Decide move (explore or exploit)
+                    // exploration or explotation
                     let action = if rng.random::<f64>() < epsilon {
-                        // Exploration: choose random valid move
+                        // Exploration
                         *valid_moves.choose(&mut rng).unwrap()
                     } else {
-                        // Exploitation: choose best move according to Q-values
+                        // exploitation, go by q values
                         let q_values = self.network.forward(&state);
 
-                        //apply a mask to get rid of values in full columns.
+                        //apply a mask to get rid of values in full columns. [with help of ai]
                         let best_action = valid_moves.iter()
-                            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap_or(std::cmp::Ordering::Equal))
-                            .unwrap_or(&0);
-                        *best_action
+                            .max_by(|&&a, &&b| {
+                                let q_a = q_values.get(a).unwrap_or(&0.0);
+                                let q_b = q_values.get(b).unwrap_or(&0.0);
+                                q_a.partial_cmp(q_b).unwrap_or(std::cmp::Ordering::Equal)
+                            });
+
+                        match best_action {
+                            Some(&action) => action,
+                            None => *valid_moves.choose(&mut rng).unwrap() // Fallback to random
+                        }
                     };
 
-                    // FIXED: Store state-action pair for later batch training
+                    //store state action pair
                     game_history.push((state, action));
 
-                    // Make the move
+                    // Make the actual move
                     game.play_move(action, current_player);
 
                     // Check if player won
@@ -156,7 +163,7 @@ impl NeuralNetPlayer {
                 draw_count += 1;
             }
 
-            // FIXED: Proper terminal reward assignment
+            // assigning rewards for events
             let reward = if player_won {
                 1.0 // Win
             } else if opponent_won {
@@ -199,7 +206,7 @@ impl NeuralNetPlayer {
             // Decay epsilon
             epsilon = (epsilon * epsilon_decay).max(epsilon_min);
 
-            // Progress reporting
+            // for progress debugging and reporting
             if (episode + 1) % 1000 == 0 || episode == 0 {
                 println!(
                     "Episode {}/{} complete. Epsilon: {:.4}, Wins: {}, Losses: {}, Draws: {}",
@@ -212,7 +219,7 @@ impl NeuralNetPlayer {
             }
         }
 
-        println!("Training complete!");
+        println!("Training complete.");
     }
 }
 impl Player for NeuralNetPlayer {
@@ -225,24 +232,37 @@ impl Player for NeuralNetPlayer {
             println!("No valid moves found");
             return;
         }
-        let best_action = match valid_moves.iter()
-            .max_by(|&&a, &&b| q_values[a].partial_cmp(&q_values[b]).unwrap()) {
-            Some(a) => *a,
+
+        let best_action = valid_moves.iter()
+            .max_by(|&&a, &&b| {
+                let q_a = q_values.get(a).unwrap_or(&0.0); //BIG CHANGE HERE, use unwrap or to prevent panic.
+                let q_b = q_values.get(b).unwrap_or(&0.0);
+                q_a.partial_cmp(q_b).unwrap_or(std::cmp::Ordering::Equal)
+            });
+
+        let best_action = match best_action {
+            Some(&action) => action,
             None => {
-                println!("valid moves empty");
-                return;
+                println!("Could not determine best action, using first valid move");
+                valid_moves[0]
             }
         };
 
-
-
+        // Double-check that the action is still valid
         if !game_state.get_valid_moves().contains(&best_action) {
-            println!("Training: selected full column {}! Skipping turn.", best_action);
+            println!("Selected action {} is no longer valid! Using first available move.", best_action);
+            let current_valid = game_state.get_valid_moves();
+            if !current_valid.is_empty() {
+                game_state.play_move(current_valid[0], self.player);
+            } else {
+                println!("No valid moves available!");
+            }
             return;
         }
 
         game_state.play_move(best_action, self.player);
     }
+
     fn get_name(&self) -> &str {
         "Neural Net Player"
     }
