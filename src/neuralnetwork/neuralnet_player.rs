@@ -187,7 +187,10 @@ impl NeuralNetPlayer {
                     if q_next.is_empty() {
                         0.0
                     } else { //q values are not being updated, as last value is always picked.
-                        *q_next.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap()
+                        *q_next.iter()
+                            .filter(|x| !x.is_nan())
+                            .max_by(|a, b| a.partial_cmp(b).unwrap())
+                            .unwrap_or(&0.0)
                     }
                 } else {
                     0.0

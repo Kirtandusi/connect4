@@ -47,28 +47,29 @@ impl GameState {
         }
         input
     }
-    pub fn top(&self, column: usize) -> usize {
+    pub fn top(&self, column: usize) -> Option<usize> {
         for i in (0..6).rev() {
             if self.board[i][column] == 0 {
-                return i;
+                return Some(i);
             }
         }
-        6
+        None  // column full
     }
+
     /*
     takes mutable reference because it must change the gamestate.
      */
-    pub fn play_move(&mut self, column: usize, side: bool) {
-        self.last_move = Some(column);
-        let top_of_column = self.top(column);
-        if top_of_column == 6 {
-            println!("Column is full, please choose another column");
-        } else if side {
-            self.board[top_of_column][column] = 1; // Player 1
-        } else {
-            self.board[top_of_column][column] = 2; // Player 2
+    pub fn play_move(&mut self, column: usize, side: bool) -> Result<(), &'static str> {
+        match self.top(column) {
+            Some(row) => {
+                self.board[row][column] = if side { 1 } else { 2 };
+                self.last_move = Some(column);
+                Ok(())
+            }
+            None => Err("Column is full"),
         }
     }
+
 
     pub fn board_to_string(&self) {
         let mut terminal = term::stdout().unwrap();
