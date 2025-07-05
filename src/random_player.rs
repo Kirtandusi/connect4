@@ -26,7 +26,7 @@ impl Player for RandomPlayer {
         }
         let column = valid_columns[rng.random_range(0..valid_columns.len())];
         if !gamestate.check_if_full(column) {
-            gamestate.play_move(column, self.player); // CPU move
+            let _ = gamestate.play_move(column, self.player); // CPU move
         } else {
             gamestate.exclude.push(column);
             self.make_move(gamestate)

@@ -135,7 +135,7 @@ impl NeuralNetPlayer {
                     game_history.push((state, action));
 
                     // Make the actual move
-                    game.play_move(action, current_player);
+                    let _  = game.play_move(action, current_player);
 
                     // Check if player won
                     if game.check_for_win() {
@@ -256,14 +256,14 @@ impl Player for NeuralNetPlayer {
             println!("Selected action {} is no longer valid! Using first available move.", best_action);
             let current_valid = game_state.get_valid_moves();
             if !current_valid.is_empty() {
-                game_state.play_move(current_valid[0], self.player);
+                let _ = game_state.play_move(current_valid[0], self.player);
             } else {
                 println!("No valid moves available!");
             }
             return;
         }
 
-        game_state.play_move(best_action, self.player);
+        let _ = game_state.play_move(best_action, self.player);
     }
 
     fn get_name(&self) -> &str {

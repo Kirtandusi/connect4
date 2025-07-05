@@ -33,7 +33,7 @@ impl Player for HumanPlayer {
             match input.parse::<usize>() {
                 Ok(column) if column <= 7 && column >= 1 => {
                     if !game_state.check_if_full(column - 1) {
-                        game_state.play_move(column - 1, self.player);
+                        let _ = game_state.play_move(column - 1, self.player);
                         break;
                     } else {
                         println!("Column {} is full. Please try another column.", column);

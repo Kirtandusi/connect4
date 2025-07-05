@@ -61,7 +61,7 @@ impl MinMaxPlayer {
             let mut max_score = isize::MIN;
             for &col in valid_moves {
                 let mut new_state = gamestate.clone();
-                new_state.play_move(col, self.player);
+                let _ = new_state.play_move(col, self.player);
 
                 let score = self.minimax(&mut new_state, depth - 1, alpha, beta, false);
                 max_score = max_score.max(score);
@@ -77,7 +77,7 @@ impl MinMaxPlayer {
             let mut min_score = isize::MAX;
             for &col in valid_moves {
                 let mut new_state = gamestate.clone();
-                new_state.play_move(col, true);
+                let _ = new_state.play_move(col, true);
 
                 let score = self.minimax(&mut new_state, depth - 1, alpha, beta, true);
                 min_score = min_score.min(score);
@@ -99,7 +99,7 @@ impl MinMaxPlayer {
 
         for &col in &gamestate.get_valid_moves() {
             let mut new_state = gamestate.clone();
-            new_state.play_move(col, false);
+            let _ = new_state.play_move(col, false);
 
             let score = self.minimax(&mut new_state, depth - 1, alpha, beta, false);
             if score > best_score || (score == best_score && col == 3) {
@@ -116,7 +116,7 @@ impl MinMaxPlayer {
 impl Player for MinMaxPlayer {
     fn make_move(&mut self, gamestate: &mut GameState) {
         let best_move = self.find_best_move(gamestate, 5); // 5 layers of depth
-        gamestate.play_move(best_move, self.player);
+        let _ = gamestate.play_move(best_move, self.player);
     }
     fn get_name(&self) -> &str {
         "Minimax Player"
