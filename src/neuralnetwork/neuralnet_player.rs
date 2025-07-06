@@ -74,15 +74,30 @@ impl NeuralNetPlayer {
         let mut loss_count = 0;
         let mut draw_count = 0;
 
+        let mut random_chance = 0.7;
+        let mut self_play_chance = 0.25;
         for episode in 0..episodes {
+
+            //changes increase to more minimax as episodes increase.
+            if episode == 5000 {
+                random_chance = 0.4;
+                self_play_chance = 0.8;
+            } else if episode == 15000 {
+                random_chance = 0.2;
+                self_play_chance = 0.5;
+            } else if episode == 25000 {
+                random_chance = 0.1;
+                self_play_chance = 0.2;
+            }
+
             let mut game = GameState::new();
             let mut current_player = true;
 
             // Choose opponent: 50% random, 30% self-play, 20% Minimax //CHANGE THESE VALUES?
             let roll: f64 = rng.random();
-            let mut opponent: Box<dyn Player> = if roll < 0.33 {
+            let mut opponent: Box<dyn Player> = if roll < random_chance {
                 Box::new(RandomPlayer::new(!self.player))
-            } else if roll < 0.66 {
+            } else if roll < self_play_chance {
                 // Self-play with a clone of the current network
                 let cloned_net = NeuralNetwork {
                     layers: self.network.layers.clone(),
@@ -177,7 +192,7 @@ impl NeuralNetPlayer {
                 let reward_for_this_step = if i == game_history.len() - 1 {
                     reward // terminal reward
                 } else {
-                    0.0 // intermediate moves get 0 reward unless you implement shaping
+                    0.0
                 };
 
                 // next state (or 0 if terminal)
