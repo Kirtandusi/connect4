@@ -63,174 +63,163 @@ impl NeuralNetPlayer {
      */
     pub fn train_generalized(&mut self, episodes: usize) {
         let mut rng = rand::rng();
-        let discount: f32 = 0.95; // Slightly reduced discount factor
+        let discount: f64 = 0.95;
         let mut epsilon = 1.0;
-        let epsilon_min = 0.01; // Increased minimum exploration rate
-        let epsilon_decay = 0.9995; // Slower decay
-
-        println!("Starting training for {} episodes...", episodes);
-
+        let epsilon_min = 0.01;
+        let epsilon_decay = 0.9995;
         let mut win_count = 0;
         let mut loss_count = 0;
         let mut draw_count = 0;
+        let mut best_win_rate = 0.0;
 
-        let mut random_chance = 0.7;
-        let mut self_play_chance = 0.25;
+        // Keep best model for smarter self-play
+        let mut best_network = self.network.clone();
+
+        println!("Starting training for {} episodes...", episodes);
+
         for episode in 0..episodes {
-
-            //changes increase to more minimax as episodes increase.
-            if episode == 5000 {
-                random_chance = 0.4;
-                self_play_chance = 0.8;
-            } else if episode == 15000 {
-                random_chance = 0.2;
-                self_play_chance = 0.5;
-            } else if episode == 25000 {
-                random_chance = 0.1;
-                self_play_chance = 0.2;
-            }
+            // Dynamically adjust opponent mix
+            let (random_chance, self_play_chance) = if episode >= 20000 {
+                (0.05, 0.15) // 80% MinMax
+            } else if episode >= 15000 {
+                (0.2, 0.5)
+            } else if episode >= 5000 {
+                (0.4, 0.4)
+            } else {
+                (0.7, 0.25)
+            };
 
             let mut game = GameState::new();
             let mut current_player = true;
 
-            // Choose opponent: 50% random, 30% self-play, 20% Minimax //CHANGE THESE VALUES?
+            // Opponent selection
             let roll: f64 = rng.random();
             let mut opponent: Box<dyn Player> = if roll < random_chance {
                 Box::new(RandomPlayer::new(!self.player))
-            } else if roll < self_play_chance {
-                // Self-play with a clone of the current network
-                let cloned_net = NeuralNetwork {
-                    layers: self.network.layers.clone(),
-                    learning_rate: self.network.learning_rate,
-                };
+            } else if roll < random_chance + self_play_chance {
                 Box::new(NeuralNetPlayer {
                     player: !self.player,
-                    network: cloned_net,
+                    network: best_network.clone(),
                 })
             } else {
                 Box::new(MinMaxPlayer::new(!self.player))
             };
 
-            //state action reward tracking
-            let mut game_history: Vec<(Vec<f64>, usize)> = Vec::new(); // State, action pairs
+            let mut game_history: Vec<(Vec<f64>, usize)> = Vec::new();
             let mut player_won = false;
             let mut opponent_won = false;
 
             while game.is_not_full() && !player_won && !opponent_won {
                 if current_player == self.player {
-                    // AI's turn
                     let state = game.to_input_vector();
                     let valid_moves = game.get_valid_moves();
                     if valid_moves.is_empty() {
-                        break; // No valid moves available
+                        break;
                     }
-                    // exploration or explotation
+
                     let action = if rng.random::<f64>() < epsilon {
-                        // Exploration
                         *valid_moves.choose(&mut rng).unwrap()
                     } else {
-                        // exploitation, go by q values
                         let q_values = self.network.forward(&state);
-
-                        //apply a mask to get rid of values in full columns. [with help of ai]
-                        let best_action = valid_moves.iter()
+                        *valid_moves.iter()
                             .max_by(|&&a, &&b| {
                                 let q_a = q_values.get(a).unwrap_or(&0.0);
                                 let q_b = q_values.get(b).unwrap_or(&0.0);
                                 q_a.partial_cmp(q_b).unwrap_or(std::cmp::Ordering::Equal)
-                            });
-
-                        match best_action {
-                            Some(&action) => action,
-                            None => *valid_moves.choose(&mut rng).unwrap() // Fallback to random
-                        }
+                            })
+                            .unwrap_or_else(|| valid_moves.first().unwrap())
                     };
 
-                    //store state action pair
                     game_history.push((state, action));
+                    let _ = game.play_move(action, current_player);
 
-                    // Make the actual move
-                    let _  = game.play_move(action, current_player);
-
-                    // Check if player won
                     if game.check_for_win() {
                         player_won = true;
                         win_count += 1;
                     }
                 } else {
-                    // Opponent's turn
-                    let _prev_state = game.clone();
                     opponent.make_move(&mut game);
-
-                    // Check if opponent won
                     if game.check_for_win() {
                         opponent_won = true;
                         loss_count += 1;
                     }
                 }
 
-                // Switch players
                 current_player = !current_player;
             }
 
-            // If the game ended in a draw
             if !player_won && !opponent_won && !game.is_not_full() {
                 draw_count += 1;
             }
 
-            // assigning rewards for events
-            let reward = if player_won {
-                1.0 // Win
+            // Final reward
+            let final_reward = if player_won {
+                1.0
             } else if opponent_won {
-                -1.0 // Loss
+                -1.0
             } else {
-                0.0 // Draw or unfinished (slight positive reward to encourage longer games)
+                0.0
             };
 
+            // Q-learning update
             for i in 0..game_history.len() {
                 let (ref state, action) = game_history[i];
-                let reward_for_this_step = if i == game_history.len() - 1 {
-                    reward // terminal reward
+                let reward = if i == game_history.len() - 1 {
+                    final_reward
                 } else {
-                    0.0
+                    0.0 // no reward shaping
                 };
 
-                // next state (or 0 if terminal)
                 let next_q_max = if i + 1 < game_history.len() {
                     let (next_state, _) = &game_history[i + 1];
                     let q_next = self.network.forward(next_state);
-                    if q_next.is_empty() {
-                        0.0
-                    } else { //q values are not being updated, as last value is always picked.
-                        *q_next.iter()
-                            .filter(|x| !x.is_nan())
-                            .max_by(|a, b| a.partial_cmp(b).unwrap())
-                            .unwrap_or(&0.0)
-                    }
+                    q_next.iter()
+                        .filter(|x| !x.is_nan())
+                        .cloned()
+                        .fold(f64::NEG_INFINITY, f64::max)
                 } else {
                     0.0
                 };
 
-                let target = reward_for_this_step as f64 + (discount as f64) * next_q_max;
-
-                let mut q_values = self.network.forward(state);
-
-                q_values[action] = target;
-
-                self.network.back(state, &q_values);
+                let target = reward + discount * next_q_max;
+                let current_output = self.network.forward(state);
+                let mut targets = current_output.clone();
+                targets[action] = target;
+                self.network.back(state, &targets);
             }
 
-
-            // Decay epsilon
+            // Epsilon decay
             epsilon = (epsilon * epsilon_decay).max(epsilon_min);
 
-            // for progress debugging and reporting
+            // Epsilon recovery on performance collapse
+            let total = win_count + loss_count + draw_count;
+            if total >= 1000 {
+                let win_rate = win_count as f64 / total as f64;
+                if win_rate > best_win_rate {
+                    best_win_rate = win_rate;
+                    best_network = self.network.clone(); // promote to self-play opponent
+                }
+
+                if win_rate < 0.35 && epsilon <= epsilon_min + 1e-5 {
+                    println!(
+                        "Win rate dropped to {:.2}, increasing epsilon for recovery.",
+                        win_rate
+                    );
+                    epsilon = 0.1;
+                }
+            }
+
+            // Logging
             if (episode + 1) % 1000 == 0 || episode == 0 {
                 println!(
                     "Episode {}/{} complete. Epsilon: {:.4}, Wins: {}, Losses: {}, Draws: {}",
-                    episode + 1, episodes, epsilon, win_count, loss_count, draw_count
+                    episode + 1,
+                    episodes,
+                    epsilon,
+                    win_count,
+                    loss_count,
+                    draw_count
                 );
-                // Reset counters for next batch
                 win_count = 0;
                 loss_count = 0;
                 draw_count = 0;
@@ -239,6 +228,8 @@ impl NeuralNetPlayer {
 
         println!("Training complete.");
     }
+
+
 }
 impl Player for NeuralNetPlayer {
     fn make_move(&mut self, game_state: &mut GameState) {
