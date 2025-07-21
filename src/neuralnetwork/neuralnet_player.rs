@@ -14,6 +14,8 @@ pub struct NeuralNetPlayer {
 
 //deep Q learning implementation. Values are set to be random instead of 0. Will resolve naturally.
 // learning rate implemented during back prop, not needed during Q learning.
+//Q values is expected future rewards as trained by neural networks. Highest value is chosen.
+//updated in back propagation.
 impl NeuralNetPlayer {
     pub fn new(player: bool) -> Self {
         let input_size = 42; //connect 4 is 7x6
@@ -25,7 +27,7 @@ impl NeuralNetPlayer {
         //random weights, biases
         let hidden_layer: Layer = (0..hidden_size)
             .map(|_| {
-                let weights: Vec<f64> = (0..input_size)
+                let weights: Vec<f64> = (0..input_size) //initialized to random numbers
                     .map(|_| rng.random_range(-0.5..0.5))
                     .collect();
                 let bias = rng.random_range(-0.5..0.5);
@@ -62,6 +64,7 @@ impl NeuralNetPlayer {
         the neural network will train itself.
      */
     pub fn train_generalized(&mut self, episodes: usize) {
+        //hyperparameters
         let mut rng = rand::rng();
         let discount: f64 = 0.95;
         let mut epsilon = 1.0;
@@ -77,6 +80,7 @@ impl NeuralNetPlayer {
 
         println!("Starting training for {} episodes...", episodes);
 
+        //to decide the chances. Will be more random to start, then become more deterministic.
         for episode in 0..episodes {
             // Dynamically adjust opponent mix
             let (random_chance, self_play_chance) = if episode >= 20000 {
@@ -88,11 +92,7 @@ impl NeuralNetPlayer {
             } else {
                 (0.7, 0.25)
             };
-
-            let mut game = GameState::new();
-            let mut current_player = true;
-
-            // Opponent selection
+            //opponent selection
             let roll: f64 = rng.random();
             let mut opponent: Box<dyn Player> = if roll < random_chance {
                 Box::new(RandomPlayer::new(!self.player))
@@ -105,8 +105,11 @@ impl NeuralNetPlayer {
                 Box::new(MinMaxPlayer::new(!self.player))
             };
 
+            let mut game = GameState::new();
+            let mut current_player = true;
+
             let mut game_history: Vec<(Vec<f64>, usize)> = Vec::new();
-            let mut player_won = false;
+            let mut player_won = false; //to check through loop
             let mut opponent_won = false;
 
             while game.is_not_full() && !player_won && !opponent_won {
@@ -117,9 +120,10 @@ impl NeuralNetPlayer {
                         break;
                     }
 
+                    //if less than epsilon, choose a random move
                     let action = if rng.random::<f64>() < epsilon {
                         *valid_moves.choose(&mut rng).unwrap()
-                    } else {
+                    } else { //if greater than epsilon use best q
                         let q_values = self.network.forward(&state);
                         *valid_moves.iter()
                             .max_by(|&&a, &&b| {
@@ -161,7 +165,7 @@ impl NeuralNetPlayer {
                 0.0
             };
 
-            // Q-learning update
+            // Q-learning update, using forward() and back()
             for i in 0..game_history.len() {
                 let (ref state, action) = game_history[i];
                 let reward = if i == game_history.len() - 1 {
@@ -229,7 +233,6 @@ impl NeuralNetPlayer {
         println!("Training complete.");
     }
 
-
 }
 impl Player for NeuralNetPlayer {
     fn make_move(&mut self, game_state: &mut GameState) {
@@ -242,6 +245,7 @@ impl Player for NeuralNetPlayer {
             return;
         }
 
+        //duplicate code
         let best_action = valid_moves.iter()
             .max_by(|&&a, &&b| {
                 let q_a = q_values.get(a).unwrap_or(&0.0); //BIG CHANGE HERE, use unwrap or to prevent panic.

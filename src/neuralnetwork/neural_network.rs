@@ -30,7 +30,7 @@ impl NeuralNetwork {
     /*
     forward pass. Calculates z = w * x + b. applies activation, stores output.
      */
-    pub fn forward(&mut self, input: &Vec<f64>) -> Vec<f64> {
+    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut current_input = input.clone();
 
         for layer in &mut self.layers {
@@ -39,7 +39,7 @@ impl NeuralNetwork {
                 let z = neuron
                     .weights
                     .iter()
-                    .zip(&current_input)
+                    .zip(&current_input) //dot product of neurons weights and input vector.
                     .map(|(w, i)| w * i)
                     .sum::<f64>()
                     + neuron.bias;
